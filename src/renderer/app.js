@@ -11,6 +11,7 @@ import { openCommandPalette, openQuickSwitcher } from './switcher';
 import { hotkeysSection } from './hotkeys-settings';
 import { setupHoverPreview } from './hover-preview';
 import { EDITOR_COMMANDS } from './editor-setup';
+import { setupAppearance } from './appearance';
 import { prefs } from './prefs';
 import {
   openDailyNote, openAdjacentDaily, insertTemplate, openRandomNote, createUniqueNote, Bookmarks, renderBookmarks,
@@ -33,6 +34,7 @@ const search = new SearchPane({ store, workspace, rootEl: $('#search-pane') });
 
 store.addEventListener('change', () => explorer.render());
 setupHoverPreview({ store, workspace });
+setupAppearance();
 workspace.addEventListener('change', () => explorer.render());
 
 const vaultName = (cfg) => cfg.vaultPath.split(/[\\/]/).filter(Boolean).pop() || 'Docs';
@@ -81,6 +83,8 @@ const syncNow = () => api.syncNow().catch((err) => notice(err, { error: true }))
   { id: 'editor:save', name: 'Salvar nota', hotkeys: ['Mod+S'], check: textView, run: () => textView().save() },
   { id: 'editor:toggle-mode', name: 'Alternar edição/leitura', hotkeys: ['Mod+E'], check: textView, run: () => textView().toggleMode() },
   { id: 'note:history', name: 'Histórico de versões da nota', check: textView, run: () => textView().showHistory() },
+  { id: 'note:export-pdf', name: 'Exportar nota para PDF', check: textView, run: () => textView().exportPdf() },
+  { id: 'app:toggle-theme', name: 'Alternar tema claro/escuro', run: () => prefs.set('theme', document.body.classList.contains('theme-light') ? 'dark' : 'light') },
   { id: 'graph:open', name: 'Abrir visualização em gráfico', hotkeys: ['Mod+G'], run: () => workspace.openGraph() },
   { id: 'workspace:new-tab', name: 'Nova aba', hotkeys: ['Mod+T'], run: () => workspace.newTab() },
   { id: 'workspace:close', name: 'Fechar aba', hotkeys: ['Mod+W'], check: view, run: () => workspace.closeView(view()) },

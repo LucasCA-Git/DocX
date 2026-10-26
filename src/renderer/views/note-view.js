@@ -621,11 +621,38 @@ export class NoteView {
     showMenu([
       { label: 'Renomear', icon: 'pencil', action: () => this.focusTitle() },
       { label: this.mode === 'reading' ? 'Editar' : 'Modo leitura', icon: 'book-open', action: () => this.toggleMode() },
-      ...(this.isText ? [{ label: 'Histórico de versões', icon: 'history', action: () => this.showHistory() }] : []),
+      ...(this.isText ? [
+        { label: 'Histórico de versões', icon: 'history', action: () => this.showHistory() },
+        { label: 'Exportar para PDF', icon: 'file-down', action: () => this.exportPdf() },
+      ] : []),
       { label: this.workspace.bookmarks?.has(this.path) ? 'Remover dos favoritos' : 'Favoritar', icon: 'bookmark', action: () => this.workspace.bookmarks?.toggleFile(this.path) },
       '-',
       { label: 'Excluir arquivo', icon: 'trash', danger: true, action: () => this.workspace.deletePath(this.path) },
     ], rect.left, rect.bottom + 4);
+  }
+
+  // Rendered HTML of the note (reading view, with embeds and diagrams finished) for the PDF.
+  async exportPdf() {
+    if (!this.path || !this.isText) return;
+    await this.save();
+    const holder = el('div', { class: 'markdown-reading' });
+    const text = this.text();
+    const fm = parseFrontMatter(text);
+    const body = el('div');
+    body.innerHTML = renderMarkdown(fm.data ? text.slice(fm.to) : text, (target) => this.store.resolve(target, this.path));
+    holder.append(...(fm.data ? [renderProperties(fm.data, this.propertyHandlers)] : []), ...body.childNodes);
+    enhanceRendered(holder);
+    fillEmbeds(holder, { store: this.store, workspace: this.workspace, depth: 0, seen: new Set([this.path]) });
+    // Mermaid draws asynchronously.
+    for (let i = 0; i < 50 && holder.querySelector('.mermaid-diagram:not(:has(img, .mermaid-error))'); i++) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    try {
+      const file = await api.exportPdf(holder.innerHTML, displayName(this.path));
+      if (file) notice(`PDF salvo em ${file}`);
+    } catch (err) {
+      notice(err, { error: true });
+    }
   }
 
   showHistory() {

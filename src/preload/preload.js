@@ -33,4 +33,6 @@ contextBridge.exposeInMainWorld('docs', {
   onConflict: (cb) => subscribe('sync:conflict', cb),
   onBeforeClose: (cb) => subscribe('app:before-close', cb),
   closeReady: () => ipcRenderer.invoke('app:close-ready'),
+  exportPdf: (html, title) => ipcRenderer.invoke('note:export-pdf', html, title),
+  setTitleBarColors: (colors) => ipcRenderer.invoke('app:titlebar', colors),
 });

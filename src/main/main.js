@@ -14,7 +14,11 @@ const { createReadStream } = require('node:fs');
 const { Readable } = require('node:stream');
 const { ASSET_SCHEME } = require('../shared/asset-url');
 
+const os = require('node:os');
+const { pathToFileURL } = require('node:url');
+
 const SYNC_INTERVAL_MS = 30_000;
+const MAX_EXPORT_HTML = 20 * 1024 * 1024;
 const WATCH_DEBOUNCE_MS = 600;
 const MAX_READ_TEXTS = 20_000;
 const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -193,9 +197,51 @@ function registerIpc() {
     const body = await requireGit().showFile(requireString(sha, 'Versão'), requireString(rel, 'Caminho'));
     return body === null ? null : body.toString('utf8');
   });
+  handle('note:export-pdf', (html, title) => exportPdf(requireString(html, 'Conteúdo'), requireString(title, 'Título')));
+  handle('app:titlebar', (colors) => {
+    const hex = /^#[0-9a-f]{6}$/i;
+    if (!hex.test(colors?.color) || !hex.test(colors?.symbolColor)) throw new Error('Cores inválidas');
+    win?.setTitleBarOverlay?.({ color: colors.color, symbolColor: colors.symbolColor, height: 40 });
+    win?.setBackgroundColor(colors.color);
+  });
   handle('app:close-ready', () => {
     closeWindowNow();
   });
+}
+
+const escapeHtml = (text) => text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+// "Exportar para PDF": the note's rendered (already sanitized) HTML is printed by a hidden window
+// with JavaScript off and a CSP that only allows local styles, images and fonts.
+async function exportPdf(html, title) {
+  if (html.length > MAX_EXPORT_HTML) throw new Error('Nota grande demais para exportar');
+  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+    title: 'Exportar para PDF',
+    defaultPath: `${title.replace(/[\\/:*?"<>|]/g, '-') || 'nota'}.pdf`,
+    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+  });
+  if (canceled || !filePath) return null;
+  const rendererDir = path.join(__dirname, '..', '..', 'dist', 'renderer');
+  const css = (file) => pathToFileURL(path.join(rendererDir, file)).href;
+  const page = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src file: data: vault-asset:; style-src file: 'unsafe-inline'; font-src file: data:">
+<link rel="stylesheet" href="${css('vendor/katex/katex.min.css')}"><link rel="stylesheet" href="${css('print.css')}">
+<title>${escapeHtml(title)}</title></head><body><article class="markdown-reading"><h1 class="print-title">${escapeHtml(title)}</h1>${html}</article></body></html>`;
+  const tmp = path.join(os.tmpdir(), `docs-print-${process.pid}-${Date.now()}.html`);
+  await fs.writeFile(tmp, page);
+  const printer = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true, contextIsolation: true } });
+  try {
+    await printer.loadFile(tmp);
+    // Images (vault-asset://) finish loading after the page itself.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const pdf = await printer.webContents.printToPDF({ printBackground: true, pageSize: 'A4', margins: { top: 0.6, bottom: 0.6, left: 0.6, right: 0.6 } });
+    await fs.writeFile(filePath, pdf);
+    shell.showItemInFolder(filePath);
+    return filePath;
+  } finally {
+    printer.destroy();
+    fs.rm(tmp, { force: true }).catch(() => {});
+  }
 }
 
 // Right-click in text fields: spelling suggestions, then cut/copy/paste.
