@@ -25,7 +25,7 @@ for (const [entry, file] of [['app.js', 'renderer.js'], ['graph-worker.js', 'gra
   });
 }
 
-for (const file of ['index.html', 'styles.css']) {
+for (const file of ['index.html', 'styles.css', 'print.css']) {
   fs.copyFileSync(path.join(src, file), path.join(out, file));
 }
 

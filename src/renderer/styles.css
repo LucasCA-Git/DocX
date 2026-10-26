@@ -16,9 +16,39 @@
   --ribbon-width: 44px;
   --sidebar-width: 260px;
   --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  --font-mono: var(--font-mono-custom, ui-monospace, "Cascadia Code", Consolas, monospace);
+  --accent-rgb: 127 109 242;
+  --interactive-accent-hover: #8c7cf5;
+  --graph-node: #a3a3a3;
+  --graph-link: rgba(160, 160, 160, 0.28);
+  --graph-label: #dadada;
   color-scheme: dark;
 }
+/* Light theme (Configurações › Aparência). */
+body.theme-light {
+  --background-primary: #ffffff;
+  --background-secondary: #f6f6f6;
+  --background-modifier-hover: rgb(0 0 0 / 0.05);
+  --background-modifier-active: rgb(0 0 0 / 0.08);
+  --background-modifier-border: #e0e0e0;
+  --text-normal: #222222;
+  --text-muted: #5c5c5c;
+  --text-faint: #999999;
+  --text-error: #e93147;
+  --text-success: #08b94e;
+  --graph-node: #8a8a8a;
+  --graph-link: rgba(90, 90, 90, 0.3);
+  --graph-label: #333333;
+  color-scheme: light;
+}
+body.theme-light .tok-string, body.theme-light .tok-string2 { color: #2e7d32; }
+body.theme-light .tok-number, body.theme-light .tok-bool, body.theme-light .tok-atom { color: #c25100; }
+body.theme-light .tok-keyword, body.theme-light .tok-operatorKeyword, body.theme-light .tok-controlKeyword { color: #8e24aa; }
+body.theme-light .tok-variableName.tok-definition, body.theme-light .tok-function, body.theme-light .tok-propertyName { color: #1565c0; }
+body.theme-light .tok-typeName, body.theme-light .tok-className { color: #b07800; }
+body.theme-light .canvas-board { background-image: radial-gradient(circle, rgb(0 0 0 / 0.12) 1px, transparent 1px); }
+body.theme-light .diff-added { color: #1b5e20; }
+body.theme-light .diff-removed { color: #b71c1c; }
 
 * { box-sizing: border-box; }
 /* `hidden` must win over the display set by component classes. */
@@ -30,7 +60,7 @@ body {
   grid-template-columns: var(--ribbon-width) var(--sidebar-width) minmax(0, 1fr) var(--right-sidebar-width);
   grid-template-rows: 100%;
   overflow: hidden;
-  font: 14px/1.5 var(--font-ui);
+  font: var(--ui-font-size, 14px)/1.5 var(--font-ui);
   background: var(--background-primary);
   color: var(--text-normal);
   user-select: none;
@@ -246,10 +276,10 @@ body.readable-line-length .note-sizer { max-width: 760px; }
 .editor-host .cm-panel.cm-search input[type=checkbox] { all: revert; }
 .editor-host .cm-searchMatch { background: rgb(255 208 0 / 0.25); }
 .editor-host .cm-searchMatch-selected { background: rgb(255 208 0 / 0.55); }
-.editor-host .cm-fat-cursor { background: rgb(127 109 242 / 0.6) !important; }
+.editor-host .cm-fat-cursor { background: rgb(var(--accent-rgb) / 0.6) !important; }
 .editor-host .cm-activeLine { background: transparent; }
 .editor-host .cm-cursor { border-left-color: var(--interactive-accent); }
-.editor-host .cm-selectionBackground, .editor-host .cm-focused .cm-selectionBackground { background: rgb(127 109 242 / 0.3) !important; }
+.editor-host .cm-selectionBackground, .editor-host .cm-focused .cm-selectionBackground { background: rgb(var(--accent-rgb) / 0.3) !important; }
 
 .markdown-reading { font-family: var(--font-text, var(--font-ui)); font-size: var(--editor-font-size, 16px); line-height: 1.6; user-select: text; }
 .markdown-reading a { color: var(--text-accent); }
@@ -388,7 +418,7 @@ dialog .row button:hover, dialog .buttons button:hover { background: var(--backg
 dialog .hint { font-size: 12px; color: var(--text-muted); margin: 4px 0 0; }
 dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; }
 button.mod-cta { background: var(--interactive-accent); color: #fff; }
-button.mod-cta:hover { background: #8c7cf5; }
+button.mod-cta:hover { background: var(--interactive-accent-hover); }
 button.mod-warning { background: var(--text-error); color: #fff; }
 button.mod-warning:hover { background: #fc6166; }
 .modal-confirm { width: min(400px, 92vw); }
@@ -437,7 +467,7 @@ button.mod-warning:hover { background: #fc6166; }
   color: var(--text-muted); background: var(--background-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .result-line:hover { color: var(--text-normal); }
-.result-line mark { background: rgb(127 109 242 / 0.35); color: var(--text-normal); border-radius: 2px; }
+.result-line mark { background: rgb(var(--accent-rgb) / 0.35); color: var(--text-normal); border-radius: 2px; }
 .right-sidebar-toggle { margin: 0; }
 
 /* ---------- settings modal ---------- */
@@ -529,10 +559,10 @@ kbd.hotkey.is-conflict { border-color: var(--text-error); color: var(--text-erro
 /* ---------- tags, properties, side panes ---------- */
 
 .editor-host .lp-tag, .markdown-reading a.tag, .tag-item .tag, .metadata-chip.tag {
-  color: var(--text-accent); background: rgb(127 109 242 / 0.15); border-radius: 10px; padding: 0 6px;
+  color: var(--text-accent); background: rgb(var(--accent-rgb) / 0.15); border-radius: 10px; padding: 0 6px;
   text-decoration: none; cursor: pointer;
 }
-.markdown-reading a.tag:hover, .metadata-chip.tag:hover { background: rgb(127 109 242 / 0.28); }
+.markdown-reading a.tag:hover, .metadata-chip.tag:hover { background: rgb(var(--accent-rgb) / 0.28); }
 .metadata-container { margin: 4px 0 16px; padding: 8px 0; border-bottom: 1px solid var(--background-modifier-border); font-size: 0.9em; cursor: text; }
 .metadata-title { font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
 .metadata-property { display: grid; grid-template-columns: minmax(80px, 160px) 1fr; gap: 12px; padding: 3px 0; }
@@ -632,8 +662,8 @@ details.callout > summary::-webkit-details-marker { display: none; }
 [data-callout="failure"], .lp-callout-failure, [data-callout="danger"], .lp-callout-danger, [data-callout="bug"], .lp-callout-bug { --callout: 233 49 71; }
 [data-callout="example"], .lp-callout-example { --callout: 120 82 238; }
 [data-callout="quote"], .lp-callout-quote { --callout: 158 158 158; }
-.editor-host .cm-line.lp-callout { --callout: 68 138 255; background: rgb(var(--callout) / 0.1); border-left: 3px solid rgb(var(--callout)); padding-left: 14px; }
-.editor-host .cm-line.lp-callout-title { font-weight: 600; color: rgb(var(--callout)); }
+.editor-host .cm-line.lp-callout { background: rgb(var(--callout, 68 138 255) / 0.1); border-left: 3px solid rgb(var(--callout, 68 138 255)); padding-left: 14px; }
+.editor-host .cm-line.lp-callout-title { font-weight: 600; color: rgb(var(--callout, 68 138 255)); }
 /* Fold arrows sit in the left margin (like Obsidian), so the text lines up with the title. */
 .editor-host .cm-foldGutter { width: 22px; }
 body:not(.show-line-numbers).fold-gutter .editor-host .cm-editor { margin-left: -22px; }
@@ -707,7 +737,7 @@ body:not(.show-line-numbers).fold-gutter .editor-host .cm-editor { margin-left: 
 .canvas-handle-left { left: -7px; top: calc(50% - 6px); }
 .canvas-handle-right { right: -7px; top: calc(50% - 6px); }
 .canvas-resize { position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; cursor: nwse-resize; z-index: 2; }
-.canvas-selection-box { position: absolute; border: 1px solid var(--interactive-accent); background: rgb(127 109 242 / 0.12); pointer-events: none; }
+.canvas-selection-box { position: absolute; border: 1px solid var(--interactive-accent); background: rgb(var(--accent-rgb) / 0.12); pointer-events: none; }
 .canvas-toolbar {
   position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px;
   padding: 4px 8px; border-radius: 10px; background: var(--background-secondary); border: 1px solid var(--background-modifier-border);

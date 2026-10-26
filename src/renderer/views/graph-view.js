@@ -445,11 +445,22 @@ export class GraphView {
     });
   }
 
+  // Theme colors from CSS (light/dark), read once per frame.
+  themeColors() {
+    const css = getComputedStyle(document.body);
+    const v = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
+    COLORS.note = v('--graph-node', COLORS.note);
+    COLORS.link = v('--graph-link', COLORS.link);
+    COLORS.label = v('--graph-label', COLORS.label);
+    COLORS.highlight = v('--interactive-accent', COLORS.highlight);
+  }
+
   draw() {
     const {
       ctx, cam, dpr, nodes, positions, hover,
     } = this;
     if (!this.width) return;
+    this.themeColors();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.setTransform(dpr * cam.k, 0, 0, dpr * cam.k, dpr * cam.x, dpr * cam.y);
