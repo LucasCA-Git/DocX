@@ -15,7 +15,6 @@ const { Readable } = require('node:stream');
 const { ASSET_SCHEME } = require('../shared/asset-url');
 
 const os = require('node:os');
-const { pathToFileURL } = require('node:url');
 
 const SYNC_INTERVAL_MS = 30_000;
 const MAX_EXPORT_HTML = 20 * 1024 * 1024;
@@ -221,15 +220,23 @@ async function exportPdf(html, title) {
     filters: [{ name: 'PDF', extensions: ['pdf'] }],
   });
   if (canceled || !filePath) return null;
-  const rendererDir = path.join(__dirname, '..', '..', 'dist', 'renderer');
-  const css = (file) => pathToFileURL(path.join(rendererDir, file)).href;
+  // Styles and KaTeX fonts are inlined: the page may load nothing from the disk (no file:), only
+  // vault images and data: URLs.
+  const css = await printStyles();
+  const body = html.replace(/<\/?(meta|link|base|iframe|object|embed|script|form)\b[^>]*>/gi, '');
   const page = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src file: data: vault-asset:; style-src file: 'unsafe-inline'; font-src file: data:">
-<link rel="stylesheet" href="${css('vendor/katex/katex.min.css')}"><link rel="stylesheet" href="${css('print.css')}">
-<title>${escapeHtml(title)}</title></head><body><article class="markdown-reading"><h1 class="print-title">${escapeHtml(title)}</h1>${html}</article></body></html>`;
-  const tmp = path.join(os.tmpdir(), `docs-print-${process.pid}-${Date.now()}.html`);
-  await fs.writeFile(tmp, page);
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src vault-asset: data:; style-src 'unsafe-inline'; font-src data:; form-action 'none'">
+<style>${css}</style>
+<title>${escapeHtml(title)}</title></head><body><article class="markdown-reading"><h1 class="print-title">${escapeHtml(title)}</h1>${body}</article></body></html>`;
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'docs-print-'));
+  const tmp = path.join(dir, 'nota.html');
+  await fs.writeFile(tmp, page, { flag: 'wx' });
   const printer = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true, contextIsolation: true } });
+  const block = (event) => event.preventDefault();
+  printer.webContents.on('will-navigate', block);
+  printer.webContents.on('will-redirect', block);
+  printer.webContents.on('will-frame-navigate', block);
+  printer.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   try {
     await printer.loadFile(tmp);
     // Images (vault-asset://) finish loading after the page itself.
@@ -240,8 +247,27 @@ async function exportPdf(html, title) {
     return filePath;
   } finally {
     printer.destroy();
-    fs.rm(tmp, { force: true }).catch(() => {});
+    fs.rm(dir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+let printCss = null;
+async function printStyles() {
+  if (printCss) return printCss;
+  const dir = path.join(__dirname, '..', '..', 'dist', 'renderer');
+  const katexDir = path.join(dir, 'vendor', 'katex');
+  let katex = await fs.readFile(path.join(katexDir, 'katex.min.css'), 'utf8');
+  // Only the woff2 fonts, as data: URLs.
+  const fonts = new Map();
+  for (const [, file] of katex.matchAll(/url\(fonts\/([\w-]+\.woff2)\)/g)) {
+    if (!fonts.has(file)) fonts.set(file, (await fs.readFile(path.join(katexDir, 'fonts', file))).toString('base64'));
+  }
+  katex = katex.replace(/src:([^;}]*)/g, (decl) => {
+    const m = decl.match(/url\(fonts\/([\w-]+\.woff2)\)/);
+    return m ? `src:url(data:font/woff2;base64,${fonts.get(m[1])}) format("woff2")` : decl;
+  });
+  printCss = `${katex}\n${await fs.readFile(path.join(dir, 'print.css'), 'utf8')}`;
+  return printCss;
 }
 
 // Right-click in text fields: spelling suggestions, then cut/copy/paste.

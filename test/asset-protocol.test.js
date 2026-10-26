@@ -87,3 +87,8 @@ test('parseRange handles the byte ranges media players ask for', () => {
   assert.equal(parseRange(null, 1000), null);
   assert.equal(parseRange('bytes=0-1,5-6', 1000), null);
 });
+
+test('a reversed range is ignored (whole file), not refused', () => {
+  const { parseRange } = require('../src/main/asset-protocol');
+  assert.equal(parseRange('bytes=5-2', 1000), null);
+});

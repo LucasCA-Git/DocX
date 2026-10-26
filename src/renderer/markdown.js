@@ -9,8 +9,11 @@ import { displayName, IMAGE_FILE } from './dom';
 
 const escapeHtml = (text) => text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-// DOMPurify's default URI allow-list plus our attachment scheme.
-const ALLOWED_URI_REGEXP = /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|vault-asset):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+// Web links, mail, our attachment scheme, anchors and plain values (DOMPurify also checks
+// attributes like type="checkbox" or width="300" with this). Never "//host", "\\host", "../x" or
+// "C:\x": in a file:// page those reach the disk or a network share (Windows sends credentials).
+const ALLOWED_URI_REGEXP = /^(?:(?:https?|mailto|tel|vault-asset):|#|(?![/\\.])[^a-z]|[a-z+\-][a-z+.\-]*(?:[^a-z+.\-:/\\]|$))/i;
+let currentResolve = () => null;
 
 // ![[img.png|300]] or |300x200 sets the size, like Obsidian.
 const SIZE_RE = /^(\d+)(?:x(\d+))?$/;
@@ -22,6 +25,15 @@ const VIDEO_RE = /\.(mp4|webm|mov|ogv)$/i;
 const md = new Marked({ gfm: true });
 md.use(markedFootnote({ description: 'Notas de rodapé', footnoteDivider: true }));
 md.use({
+  // ![alt](anexos/x.png): a relative image path is looked up in the vault.
+  renderer: {
+    image({ href, title, text }) {
+      if (/^(https?:|data:image\/)/i.test(href)) return false;
+      const resolved = currentResolve(decodeURI(href).replace(/^\.?\//, ''));
+      if (!resolved || !IMAGE_FILE.test(resolved)) return `<span class="internal-embed is-unresolved">"${escapeHtml(href)}" não foi encontrado.</span>`;
+      return `<img src="${escapeHtml(assetUrl(resolved))}" alt="${escapeHtml(text ?? '')}"${title ? ` title="${escapeHtml(title)}"` : ''}>`;
+    },
+  },
   extensions: [
     {
       name: 'highlight',
@@ -116,7 +128,14 @@ export function renderMarkdown(raw, resolve) {
   }
   source += text.slice(last);
   // Notes come from the remote too: no <style>/style= that could restyle or cover the app UI.
-  return DOMPurify.sanitize(md.parse(source), {
+  currentResolve = (target) => resolve(target);
+  let html;
+  try {
+    html = md.parse(source);
+  } finally {
+    currentResolve = () => null;
+  }
+  return DOMPurify.sanitize(html, {
     ADD_ATTR: ['data-href', 'data-tag', 'data-embed-path', 'data-embed-sub', 'data-tex', 'controls'],
     ADD_TAGS: ['audio', 'video'],
     FORBID_TAGS: ['style'],
