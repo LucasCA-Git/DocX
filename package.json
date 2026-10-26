@@ -1,0 +1,35 @@
+{
+  "name": "docs",
+  "version": "0.1.0",
+  "description": "Editor de notas Markdown com sincronização no seu próprio bucket S3",
+  "private": true,
+  "main": "src/main/main.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "node scripts/build.js && electron .",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/credential-providers": "^3.700.0"
+  },
+  "devDependencies": {
+    "@codemirror/lang-markdown": "^6.3.0",
+    "@codemirror/legacy-modes": "^6.5.5",
+    "@codemirror/state": "^6.4.0",
+    "@replit/codemirror-vim": "^6.4.0",
+    "codemirror": "^6.0.1",
+    "d3-force": "^3.0.0",
+    "dompurify": "^3.2.0",
+    "electron": "^33.2.0",
+    "esbuild": "^0.24.0",
+    "katex": "^0.19.0",
+    "lucide": "^0.460.0",
+    "marked": "^15.0.0",
+    "marked-footnote": "^1.4.0",
+    "mermaid": "^12.1.0"
+  }
+}

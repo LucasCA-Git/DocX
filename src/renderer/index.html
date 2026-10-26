@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: vault-asset:; media-src vault-asset:; connect-src 'none'; object-src 'none'; base-uri 'none'">
+  <title>Docs</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="ribbon">
+    <div id="ribbon-top" class="titlebar-drag"></div>
+    <div id="ribbon-actions"></div>
+    <div id="ribbon-bottom"></div>
+  </div>
+
+  <aside id="left-sidebar">
+    <div id="sidebar-tabs" class="sidebar-header titlebar-drag"></div>
+    <div id="files-pane" class="sidebar-pane">
+      <div id="explorer-actions" class="nav-buttons"></div>
+      <nav id="tree" class="nav-files"></nav>
+    </div>
+    <div id="search-pane" class="sidebar-pane" hidden></div>
+    <div id="bookmarks-pane" class="sidebar-pane bookmarks-pane" hidden></div>
+    <div class="vault-footer">
+      <span id="vault-name">Docs</span>
+      <span id="vault-switcher"></span>
+    </div>
+  </aside>
+
+  <section id="workspace">
+    <div id="workspace-root"></div>
+  </section>
+
+  <aside id="right-sidebar"></aside>
+
+  <footer id="statusbar">
+    <span id="doc-stats" class="status-item"></span>
+    <span id="sync-status" class="status-item"></span>
+  </footer>
+
+  <div id="notices"></div>
+
+  <dialog id="settings" class="modal-settings" aria-label="Configurações">
+    <nav id="settings-nav" class="settings-nav"></nav>
+    <div id="settings-body" class="settings-body"></div>
+    <button id="settings-close" class="clickable-icon settings-close" title="Fechar" aria-label="Fechar"></button>
+  </dialog>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
