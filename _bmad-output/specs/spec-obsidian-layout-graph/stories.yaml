@@ -1,0 +1,42 @@
+- id: "1"
+  title: Índice de links e resolução de wikilinks
+  description: >-
+    Extrai links [[ ]] e embeds ![[ ]] de cada nota, resolve nomes como o Obsidian e expõe arestas e backlinks.
+    Base de CAP-2, CAP-4, CAP-7 e CAP-8.
+  invoke_dev_with: >-
+    Módulo puro testado com node --test (TDD, ecc:tdd-guide). Ignorar links dentro de blocos de código.
+- id: "2"
+  title: Layout do workspace estilo Obsidian
+  description: >-
+    Ribbon, explorador com pastas recolhíveis e criação de nota/pasta, abas de notas e grafo, status bar (CAP-1).
+  done_checkpoint: true
+- id: "3"
+  title: Links no editor e imagens embutidas
+  description: >-
+    Autocomplete ao digitar [[, Ctrl+clique para navegar, link inexistente cria nota (CAP-2); imagens ![[ ]] via protocolo seguro do main (CAP-3).
+  invoke_dev_with: >-
+    Protocolo só serve imagens de dentro do vault; revisar com ecc:security-reviewer.
+- id: "4"
+  title: Live Preview
+  description: >-
+    Markdown formatado enquanto edita, linha do cursor mostra sintaxe crua; Ctrl+E alterna para leitura (CAP-6).
+- id: "5"
+  title: Graph View global
+  description: >-
+    Nós de notas e anexos (amarelos), arestas de links e embeds, zoom/pan/arrastar, clique abre a nota, atualiza em até 2 s (CAP-4).
+  invoke_dev_with: >-
+    Simulação de forças num Web Worker, desenho em Canvas 2D; fluido com ~2000 nós.
+  done_checkpoint: true
+- id: "6"
+  title: Backlinks e grafo local
+  description: >-
+    Painel de backlinks da nota aberta e grafo local dela com vizinhos diretos (CAP-7, CAP-8).
+- id: "7"
+  title: Busca no vault
+  description: >-
+    Busca de texto em todas as notas, com trecho encontrado e clique para abrir (CAP-9).
+- id: "8"
+  title: Verificação ponta a ponta do sync com o bucket real
+  description: >-
+    Confirma CAP-5 contra docs3lucasalecrim: pasta vazia baixa tudo, edição sobe em segundos, anexos incluídos.
+  done_checkpoint: true

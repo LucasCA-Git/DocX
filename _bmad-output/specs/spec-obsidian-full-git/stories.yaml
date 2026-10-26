@@ -1,0 +1,49 @@
+- id: "1"
+  title: Motor de sync Git
+  description: >-
+    GitSync no main: init/attach ao remoto, commit automático, fetch, merge com cópia de conflito, push,
+    exclude de .trash/.docs-sync, só https/ssh, sem credencial na URL (CAP-G1).
+  invoke_dev_with: >-
+    TDD contra repositórios bare locais (dois clones simulando duas máquinas). Revisar com ecc:security-reviewer.
+- id: "2"
+  title: Git nas configurações, status e histórico de versões
+  description: >-
+    Escolha Git/S3 nas configurações, URL e branch, status bar, "sincronizar agora"; histórico da nota com
+    ver/restaurar versão (CAP-G1, CAP-G2).
+- id: "3"
+  title: Paleta de comandos e troca rápida
+  description: Registro de comandos, Ctrl+P, Ctrl+O com busca difusa (CAP-O1).
+- id: "4"
+  title: Tags, propriedades e aliases
+  description: Índice de tags, painel de tags, aliases na resolução e sugestões, tabela de propriedades (CAP-O2).
+- id: "5"
+  title: Outline, links de saída, menções e links para título/bloco
+  description: Painéis no lado direito; navegação para #título e #^bloco; sugestões de títulos (CAP-O3).
+- id: "6"
+  title: Operações de arquivo
+  description: Renomear atualiza links; colar/arrastar imagem; ordenação e revelar no explorador (CAP-O4).
+- id: "7"
+  title: Transclusão e prévia ao passar o mouse
+  description: Embeds de nota/título no leitura e Live Preview; popover de prévia (CAP-O5).
+- id: "8"
+  title: Markdown completo
+  description: Callouts, destaque, tabelas, rodapé, realce de código, Mermaid, matemática, checklist no leitura (CAP-O6).
+- id: "9"
+  title: Recursos do editor
+  description: Atalhos de formatação, buscar/substituir, dobrar, Vim, corretor, opções de editor (CAP-O7).
+- id: "10"
+  title: Notas diárias, modelos, favoritos e nota aleatória
+  description: CAP-O8.
+- id: "11"
+  title: Painéis divididos e navegação
+  description: Dividir à direita/abaixo, voltar/avançar, fixar aba (CAP-O9).
+- id: "12"
+  title: Grafo e busca avançados
+  description: Grupos coloridos, tags como nós, setas, profundidade; operadores de busca (CAP-O10, CAP-O11).
+- id: "13"
+  title: Canvas
+  description: Arquivos .canvas JSON Canvas com cartões, conexões e zoom/pan (CAP-O12).
+- id: "14"
+  title: Aparência e exportação para PDF
+  description: Tema claro/escuro, cor de destaque, fontes, exportar PDF (CAP-O13).
+  done_checkpoint: true
