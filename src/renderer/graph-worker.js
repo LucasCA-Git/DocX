@@ -51,8 +51,19 @@ function setGraph(next, links) {
   post();
 }
 
+// Strength sliders: { center, repel, link, distance }.
+function setForces(f) {
+  sim.force('charge').strength(-f.repel);
+  sim.force('link').strength(f.link).distance(f.distance);
+  sim.force('x').strength(f.center);
+  sim.force('y').strength(f.center);
+  if (nodes.length) sim.alpha(Math.max(sim.alpha(), 0.3)).restart();
+}
+
 self.onmessage = ({ data }) => {
-  if (data.type === 'graph') {
+  if (data.type === 'forces') {
+    setForces(data.forces);
+  } else if (data.type === 'graph') {
     gen = data.gen;
     setGraph(data.nodes, data.links);
   } else if (data.type === 'drag') {
