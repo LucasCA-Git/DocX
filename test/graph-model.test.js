@@ -87,3 +87,34 @@ test('graphData with a center keeps the note and its neighbours up to the depth'
   assert.deepEqual(ids(graphData(index, { center: 'Sozinha.md', orphans: false })), ['Sozinha.md']);
   assert.deepEqual(ids(graphData(index, { center: 'Nada.md' })), []);
 });
+
+function tagged() {
+  const index = vault();
+  index.update('Sozinha.md', '#ideia #projeto/web');
+  index.update('Deploy/Front_End.md', '[[Front_manual]] #projeto/web');
+  return index;
+}
+
+test('graphData: tags as nodes linked to their notes', () => {
+  const data = graphData(tagged(), { tags: true, attachments: false });
+  assert.deepEqual(ids(data).filter((id) => id.startsWith('#')), ['#ideia', '#projeto/web']);
+  const tag = data.nodes.find((n) => n.id === '#projeto/web');
+  assert.deepEqual(tag, { id: '#projeto/web', type: 'tag', label: '#projeto/web', degree: 2 });
+  assert.ok(edges(data).includes('#projeto/web->Sozinha.md'));
+  assert.ok(!ids(graphData(tagged())).some((id) => id.startsWith('#')));
+});
+
+test('graphData: the filter understands the search syntax', () => {
+  assert.deepEqual(ids(graphData(tagged(), { search: 'tag:#projeto', attachments: false })), ['Deploy/Front_End.md', 'Sozinha.md']);
+  assert.deepEqual(ids(graphData(tagged(), { search: 'deploy -manual' })), ['Deploy/Front_End.md']);
+  assert.deepEqual(ids(graphData(tagged(), { search: 'path:img OR sozinha' })), ['Sozinha.md', 'img/a.png', 'img/b.png', 'img/solta.png']);
+});
+
+test('graphData: color groups, first matching group wins', () => {
+  const data = graphData(tagged(), { groups: [{ query: 'tag:#projeto', color: '#ff0000' }, { query: 'path:Deploy', color: '#00ff00' }] });
+  const group = (id) => data.nodes.find((n) => n.id === id).group;
+  assert.equal(group('Sozinha.md'), 0);
+  assert.equal(group('Deploy/Front_End.md'), 0);
+  assert.equal(group('Deploy/Front_manual.md'), 1);
+  assert.equal(group('img/a.png'), -1);
+});

@@ -8,20 +8,65 @@ const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 8;
 const MIN_HIT_PX = 6;
 
+const { parseQuery } = require('./search-query');
+
 const labelOf = (id, type) => {
   const base = id.split('/').pop();
   return type === 'note' ? base.replace(/\.(md|markdown)$/i, '') : base;
 };
 
+// A node test from a query in the search syntax, applied to file paths and tags only (fast enough
+// to run on every graph update): words/path:/file: on the path, tag:, -negation, OR, /regex/.
+function nodeMatcher(query, tagsOf) {
+  const groups = parseQuery(query ?? '');
+  if (!groups.length) return () => true;
+  const fold = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const test = (term, node) => {
+    const id = fold(node.id);
+    const value = fold(term.value);
+    if (term.kind === 'tag') {
+      const tags = node.type === 'tag' ? [node.id.slice(1)] : tagsOf(node.id);
+      return tags.some((t) => fold(t) === value || fold(t).startsWith(`${value}/`));
+    }
+    if (term.kind === 'file') return fold(node.id.split('/').pop()).includes(value);
+    if (term.kind === 'regex') {
+      try {
+        return new RegExp(term.value, term.flags.replace(/[^imsu]/g, '') || 'i').test(node.id);
+      } catch {
+        return false;
+      }
+    }
+    return id.includes(value);
+  };
+  return (node) => groups.some((group) => group.every((term) => test(term, node) !== term.negate));
+}
+
 // options: attachments (show files that are not notes), unresolved (links to missing notes),
-// orphans (nodes without links), search (substring of the path).
+// orphans (nodes without links), tags (tags as nodes), search (filter in the search syntax),
+// groups ([{ query, color }] → node.group = index of the first matching group, or -1).
 // center/depth: local graph, the center node plus nodes up to `depth` links away from it.
 function graphData(index, {
-  attachments = true, unresolved = false, orphans = true, search = '', center = null, depth = 1,
+  attachments = true, unresolved = false, orphans = true, tags = false, search = '', groups = null, center = null, depth = 1,
 } = {}) {
-  const { nodes, edges } = index.graph({ includeUnresolved: unresolved });
-  const query = search.trim().toLowerCase();
-  let kept = nodes.filter((n) => (attachments || n.type !== 'attachment') && (!query || n.id.toLowerCase().includes(query)));
+  const base = index.graph({ includeUnresolved: unresolved });
+  let { nodes, edges } = base;
+  if (tags) {
+    const tagNodes = new Map();
+    const tagEdges = [];
+    for (const n of nodes) {
+      if (n.type !== 'note') continue;
+      for (const tag of index.tagsOf(n.id)) {
+        const key = tag.toLowerCase();
+        if (!tagNodes.has(key)) tagNodes.set(key, { id: `#${tag}`, type: 'tag' });
+        tagEdges.push({ source: n.id, target: tagNodes.get(key).id });
+      }
+    }
+    nodes = [...nodes, ...tagNodes.values()];
+    edges = [...edges, ...tagEdges];
+  }
+  const tagsOf = (id) => index.tagsOf(id);
+  const matches = nodeMatcher(search, tagsOf);
+  let kept = nodes.filter((n) => (attachments || n.type !== 'attachment') && matches(n));
   let ids = new Set(kept.map((n) => n.id));
   let links = edges.filter((e) => ids.has(e.source) && ids.has(e.target)).map((e) => ({ source: e.source, target: e.target }));
   if (center !== null) {
@@ -49,8 +94,13 @@ function graphData(index, {
     kept = kept.filter((n) => degree.has(n.id) || n.id === center);
     ids = new Set(kept.map((n) => n.id));
   }
+  const groupTests = (groups ?? []).filter((g) => g?.query?.trim()).map((g) => nodeMatcher(g.query, tagsOf));
   return {
-    nodes: kept.map((n) => ({ id: n.id, type: n.type, label: labelOf(n.id, n.type), degree: degree.get(n.id) ?? 0 })),
+    nodes: kept.map((n) => {
+      const node = { id: n.id, type: n.type, label: n.type === 'tag' ? n.id : labelOf(n.id, n.type), degree: degree.get(n.id) ?? 0 };
+      if (groups) node.group = groupTests.findIndex((t) => t(n));
+      return node;
+    }),
     links,
   };
 }

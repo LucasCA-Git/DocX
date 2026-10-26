@@ -1,4 +1,4 @@
-import { el, iconButton } from '../dom';
+import { el, icon, iconButton } from '../dom';
 import { renderDocStats } from '../status';
 import {
   graphData, nodeRadius, toWorld, zoomAt, hitTest,
@@ -14,6 +14,7 @@ const COLORS = {
   note: '#a3a3a3',
   attachment: '#d9b23a',
   unresolved: '#5c5c5c',
+  tag: '#4fb3a9',
   link: 'rgba(160, 160, 160, 0.28)',
   highlight: '#7f6df2',
   label: '#dadada',
@@ -23,22 +24,39 @@ const LINK_BATCH = 256;
 const SPRITE_SIZE = 64;
 
 // One antialiased circle per color, scaled to each node's size when drawn.
-const SPRITES = Object.fromEntries(['note', 'attachment', 'unresolved', 'highlight'].map((type) => {
-  const sprite = document.createElement('canvas');
-  sprite.width = SPRITE_SIZE;
-  sprite.height = SPRITE_SIZE;
-  const c = sprite.getContext('2d');
-  c.fillStyle = COLORS[type];
-  c.beginPath();
-  c.arc(SPRITE_SIZE / 2, SPRITE_SIZE / 2, SPRITE_SIZE / 2 - 1, 0, Math.PI * 2);
-  c.fill();
-  return [type, sprite];
-}));
+const SPRITES = new Map();
+function sprite(color) {
+  if (!SPRITES.has(color)) {
+    const canvas = document.createElement('canvas');
+    canvas.width = SPRITE_SIZE;
+    canvas.height = SPRITE_SIZE;
+    const c = canvas.getContext('2d');
+    c.fillStyle = color;
+    c.beginPath();
+    c.arc(SPRITE_SIZE / 2, SPRITE_SIZE / 2, SPRITE_SIZE / 2 - 1, 0, Math.PI * 2);
+    c.fill();
+    SPRITES.set(color, canvas);
+  }
+  return SPRITES.get(color);
+}
+
+export const DEFAULT_FORCES = { center: 0.04, repel: 90, link: 0.6, distance: 40 };
+const GROUP_COLORS = ['#e9973f', '#4fb3a9', '#e05d6f', '#5b8def', '#b07de8', '#7cc56b'];
 
 function loadOptions(key) {
-  const defaults = { attachments: true, unresolved: false, orphans: true, search: '' };
+  const defaults = {
+    attachments: true, unresolved: false, orphans: true, tags: false, arrows: false, search: '',
+    groups: [], depth: 1, nodeSize: 1, forces: { ...DEFAULT_FORCES }, open: { filters: true, groups: false, display: false, forces: false },
+  };
   try {
-    return { ...defaults, ...JSON.parse(localStorage.getItem(key)) };
+    const saved = JSON.parse(localStorage.getItem(key)) ?? {};
+    return {
+      ...defaults,
+      ...saved,
+      groups: Array.isArray(saved.groups) ? saved.groups.filter((g) => typeof g?.query === 'string' && /^#[0-9a-f]{6}$/i.test(g.color)) : [],
+      forces: { ...DEFAULT_FORCES, ...saved.forces },
+      open: { ...defaults.open, ...saved.open },
+    };
   } catch {
     return defaults;
   }
@@ -72,13 +90,16 @@ export class GraphView {
 
     this.canvas = el('canvas', { class: 'graph-canvas' });
     this.ctx = this.canvas.getContext('2d');
-    this.content = el('div', { class: 'view-content graph-content' }, this.canvas, local ? null : this.renderControls());
+    this.controls = el('div', { class: 'graph-controls' });
+    this.content = el('div', { class: 'view-content graph-content' }, this.canvas, this.controls);
+    this.renderControls();
     this.el = el('div', { class: `view graph-view${local ? ' is-local' : ''}` },
       local ? null : el('div', { class: 'view-header' }, el('div', { class: 'view-header-title' }, el('span', { class: 'view-header-title-text', text: 'Visualização em gráfico' }))),
       this.content);
 
     this.worker = new Worker('graph-worker.js');
     this.worker.onmessage = ({ data }) => this.onWorker(data);
+    this.worker.postMessage({ type: 'forces', forces: this.options.forces });
 
     this.canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
     this.canvas.addEventListener('pointermove', (e) => this.onPointerMove(e));
@@ -106,30 +127,125 @@ export class GraphView {
 
   // ---------- controls ----------
 
+  // Filters, color groups, display and forces, like Obsidian's graph settings. The local graph
+  // starts collapsed to a gear button and has a depth slider instead of the search box.
   renderControls() {
+    const save = () => this.saveOptions();
     const toggle = (key, label) => {
       const input = el('input', { type: 'checkbox', checked: this.options[key] });
       input.addEventListener('change', () => this.setOption(key, input.checked));
       return el('label', { class: 'graph-toggle' }, input, label);
     };
-    const search = el('input', { class: 'graph-search', type: 'search', placeholder: 'Buscar arquivos…', value: this.options.search, spellcheck: 'false' });
+    const slider = (label, value, min, max, step, onInput) => {
+      const input = el('input', { type: 'range', min, max, step, class: 'graph-slider' });
+      input.value = value;
+      input.addEventListener('input', () => onInput(Number(input.value)));
+      return el('label', { class: 'graph-slider-row' }, el('span', { text: label }), input);
+    };
+    const section = (id, title, ...body) => {
+      const open = this.options.open[id];
+      return el('div', { class: 'graph-section' },
+        el('div', {
+          class: 'graph-section-title',
+          onclick: () => {
+            this.options.open[id] = !open;
+            save();
+            this.renderControls();
+          },
+        }, icon(open ? 'chevron-down' : 'chevron-right', 14), el('span', { text: title })),
+        open ? el('div', { class: 'graph-section-body' }, ...body) : null);
+    };
+    const force = (key, label, min, max, step) => slider(label, this.options.forces[key], min, max, step, (v) => {
+      this.options.forces[key] = v;
+      save();
+      this.worker.postMessage({ type: 'forces', forces: this.options.forces });
+    });
+
+    if (this.isLocal && !this.controlsOpen) {
+      this.controls.className = 'graph-controls is-collapsed';
+      this.controls.replaceChildren(iconButton('settings', 'Opções do grafo local', () => {
+        this.controlsOpen = true;
+        this.renderControls();
+      }));
+      return;
+    }
+    this.controls.className = 'graph-controls';
+    const search = el('input', { class: 'graph-search', type: 'search', placeholder: 'Filtrar (ex.: tag:#projeto -path:arquivo)', value: this.options.search, spellcheck: 'false' });
     search.addEventListener('input', () => this.setOption('search', search.value));
-    return el('div', { class: 'graph-controls' },
-      el('div', { class: 'graph-controls-row' }, search, iconButton('refresh', 'Centralizar', () => this.fit({ auto: false }))),
-      toggle('attachments', 'Anexos'),
-      toggle('unresolved', 'Links sem nota'),
-      toggle('orphans', 'Órfãs'));
+
+    const groups = this.options.groups.map((group, i) => {
+      const query = el('input', { class: 'graph-group-query', type: 'search', placeholder: 'tag:#x, path:pasta…', value: group.query, spellcheck: 'false' });
+      query.addEventListener('input', () => {
+        group.query = query.value;
+        this.setOption('groups', this.options.groups);
+      });
+      const color = el('input', { type: 'color', class: 'graph-group-color', value: group.color });
+      color.addEventListener('input', () => {
+        group.color = color.value;
+        save();
+        this.requestDraw();
+      });
+      return el('div', { class: 'graph-controls-row' }, color, query, iconButton('x', 'Remover grupo', () => {
+        this.options.groups.splice(i, 1);
+        this.setOption('groups', this.options.groups);
+        this.renderControls();
+      }));
+    });
+
+    this.controls.replaceChildren(
+      el('div', { class: 'graph-controls-row graph-controls-top' },
+        this.isLocal ? el('span', { class: 'graph-controls-title', text: 'Grafo local' }) : search,
+        iconButton('refresh', 'Centralizar', () => this.fit({ auto: false })),
+        this.isLocal ? iconButton('x', 'Fechar opções', () => {
+          this.controlsOpen = false;
+          this.renderControls();
+        }) : null),
+      section('filters', 'Filtros',
+        this.isLocal ? slider('Profundidade', this.options.depth, 1, 5, 1, (v) => this.setOption('depth', v)) : null,
+        this.isLocal ? search : null,
+        toggle('tags', 'Tags'),
+        toggle('attachments', 'Anexos'),
+        toggle('unresolved', 'Links sem nota'),
+        toggle('orphans', 'Órfãs')),
+      section('groups', 'Grupos',
+        ...groups,
+        el('button', {
+          class: 'graph-add-group',
+          text: 'Novo grupo',
+          onclick: () => {
+            this.options.groups.push({ query: '', color: GROUP_COLORS[this.options.groups.length % GROUP_COLORS.length] });
+            save();
+            this.renderControls();
+          },
+        })),
+      section('display', 'Exibição',
+        toggle('arrows', 'Setas'),
+        slider('Tamanho dos nós', this.options.nodeSize, 0.5, 3, 0.1, (v) => {
+          this.options.nodeSize = v;
+          save();
+          this.requestDraw();
+        })),
+      section('forces', 'Forças',
+        force('center', 'Atração ao centro', 0, 0.3, 0.01),
+        force('repel', 'Repulsão', 0, 400, 5),
+        force('link', 'Força dos links', 0, 1, 0.05),
+        force('distance', 'Distância dos links', 10, 300, 5)),
+    );
+  }
+
+  saveOptions() {
+    try {
+      localStorage.setItem(this.optionsKey, JSON.stringify(this.options));
+    } catch {
+      // Options just won't persist.
+    }
   }
 
   // A new filter re-frames the graph once it settles (unless the user zooms or drags first).
   setOption(key, value) {
     this.options[key] = value;
     this.fitted = false;
-    try {
-      localStorage.setItem(this.optionsKey, JSON.stringify(this.options));
-    } catch {
-      // Options just won't persist.
-    }
+    this.saveOptions();
     this.scheduleUpdate();
   }
 
@@ -149,8 +265,8 @@ export class GraphView {
   // not touch links leaves the simulation alone).
   update() {
     const center = this.isLocal ? this.workspace.followedNotePath ?? '' : null;
-    const { nodes, links } = graphData(this.store.index, { ...this.options, ...(this.isLocal ? { center, search: '' } : {}) });
-    const signature = `${center}@${nodes.map((n) => `${n.id}:${n.degree}`).join('|')}#${links.map((l) => `${l.source}>${l.target}`).join('|')}`;
+    const { nodes, links } = graphData(this.store.index, { ...this.options, ...(this.isLocal ? { center } : { depth: 1 }) });
+    const signature = `${center}@${nodes.map((n) => `${n.id}:${n.degree}:${n.group}`).join('|')}#${links.map((l) => `${l.source}>${l.target}`).join('|')}`;
     if (signature === this.signature) return;
     this.signature = signature;
     // Another note in the local graph: frame it again.
@@ -291,7 +407,8 @@ export class GraphView {
     const node = this.nodes.find((n) => n.id === drag.id);
     if (!node) return;
     const newTab = event.ctrlKey || event.metaKey;
-    if (node.type === 'unresolved') this.workspace.openLink(node.id, null, { newTab });
+    if (node.type === 'tag') this.workspace.searchFor(`tag:${node.id}`);
+    else if (node.type === 'unresolved') this.workspace.openLink(node.id, null, { newTab });
     else this.workspace.openFile(node.id, { newTab });
   }
 
@@ -367,6 +484,29 @@ export class GraphView {
       }
     }
     ctx.stroke();
+    // Arrow heads at the target end, once zoomed in enough to see them.
+    if (this.options.arrows && cam.k > 0.5) {
+      ctx.fillStyle = COLORS.link;
+      ctx.beginPath();
+      const size = 6 / cam.k;
+      for (const [a, b] of this.linkIndex) {
+        if (!onScreen(b)) continue;
+        const dx = x(b) - x(a);
+        const dy = y(b) - y(a);
+        const len = Math.hypot(dx, dy);
+        if (len < 1) continue;
+        const r = nodeRadius(nodes[b].degree) * this.options.nodeSize;
+        const ux = dx / len;
+        const uy = dy / len;
+        const tipX = x(b) - ux * r;
+        const tipY = y(b) - uy * r;
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(tipX - ux * size - uy * size * 0.5, tipY - uy * size + ux * size * 0.5);
+        ctx.lineTo(tipX - ux * size + uy * size * 0.5, tipY - uy * size - ux * size * 0.5);
+        ctx.closePath();
+      }
+      ctx.fill();
+    }
     if (hover >= 0) {
       ctx.globalAlpha = 1;
       ctx.strokeStyle = COLORS.highlight;
@@ -382,11 +522,13 @@ export class GraphView {
 
     // Nodes as pre-drawn circle sprites (much cheaper to rasterize than thousands of arcs); while
     // hovering, the rest is dimmed.
+    const groupColors = this.options.groups.map((g) => g.color);
     for (let i = 0; i < nodes.length; i++) {
       if (!onScreen(i)) continue;
-      const r = nodeRadius(nodes[i].degree);
+      const r = nodeRadius(nodes[i].degree) * this.options.nodeSize;
       ctx.globalAlpha = hover >= 0 && !lit(i) ? 0.25 : 1;
-      ctx.drawImage(SPRITES[i === hover || i === centerIndex ? 'highlight' : nodes[i].type], x(i) - r, y(i) - r, r * 2, r * 2);
+      const color = i === hover || i === centerIndex ? COLORS.highlight : groupColors[nodes[i].group] ?? COLORS[nodes[i].type];
+      ctx.drawImage(sprite(color), x(i) - r, y(i) - r, r * 2, r * 2);
     }
 
     // Labels under the nodes, sized in world units so they grow with zoom.
@@ -403,7 +545,7 @@ export class GraphView {
       else if (hover >= 0) alpha = fade * 0.3;
       if (alpha <= 0.02) continue;
       ctx.globalAlpha = alpha;
-      ctx.fillText(nodes[i].label, x(i), y(i) + nodeRadius(nodes[i].degree) + 4);
+      ctx.fillText(nodes[i].label, x(i), y(i) + nodeRadius(nodes[i].degree) * this.options.nodeSize + 4);
     }
     ctx.globalAlpha = 1;
   }
