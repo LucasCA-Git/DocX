@@ -90,4 +90,18 @@ function newId() {
   return id;
 }
 
-module.exports = { parseCanvas, serializeCanvas, sidePoint, closestSide, nodesInRect, nodesInGroup, bounds, newId, SIDES };
+// The canvas text with file cards following a rename (map: old path → new path), or null when
+// nothing pointed there.
+function renameInCanvas(text, map) {
+  const canvas = parseCanvas(text);
+  let changed = false;
+  for (const n of canvas.nodes) {
+    if (n.type === 'file' && map(n.file) !== n.file) {
+      n.file = map(n.file);
+      changed = true;
+    }
+  }
+  return changed ? serializeCanvas(canvas) : null;
+}
+
+module.exports = { renameInCanvas, parseCanvas, serializeCanvas, sidePoint, closestSide, nodesInRect, nodesInGroup, bounds, newId, SIDES };

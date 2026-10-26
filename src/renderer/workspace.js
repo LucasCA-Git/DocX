@@ -2,6 +2,8 @@ import { el, icon, displayName, dirName, uniquePath, joinPath, errorText } from 
 import { NoteView } from './views/note-view';
 import { GraphView } from './views/graph-view';
 import { EmptyView } from './views/empty-view';
+import { CanvasView } from './views/canvas-view';
+import { renameInCanvas } from '../shared/canvas';
 import { confirmDialog, notice } from './status';
 import { newNotePath, linkTextFor } from '../shared/link-suggest';
 import { prefs } from './prefs';
@@ -305,10 +307,17 @@ export class Workspace extends EventTarget {
   }
 
   openFileView(path, { newTab }) {
-    const existing = this.views.find((v) => v.type === 'note' && v.path === path);
+    const existing = this.views.find((v) => (v.type === 'note' || v.type === 'canvas') && v.path === path);
     if (existing) {
       this.activate(existing);
       return existing;
+    }
+    if (/\.canvas$/i.test(path)) {
+      const view = new CanvasView({ workspace: this, store: this.store, path });
+      const empty = !newTab && this.active?.type === 'empty' ? this.active : null;
+      this.add(view);
+      if (empty) this.closeView(empty);
+      return view;
     }
     // A pinned tab keeps its note: links open in a new tab instead.
     if (!newTab && this.active?.type === 'note' && !this.active.pinned) {
@@ -431,6 +440,18 @@ export class Workspace extends EventTarget {
     }
   }
 
+  async createCanvas(folder = prefs.get('newNoteFolder')) {
+    const rel = uniquePath(folder, 'Sem título', '.canvas', this.store.files);
+    try {
+      await api.create(rel);
+      await api.write(rel, '{\n\t"nodes":[],\n\t"edges":[]\n}');
+      await this.store.refresh();
+      this.openFile(rel);
+    } catch (err) {
+      notice(err, { error: true });
+    }
+  }
+
   // A note with this name ("pasta/Nome" keeps the folder) — opened if it exists, created otherwise.
   async createNoteNamed(name, { newTab = false, content = '' } = {}) {
     const clean = name.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
@@ -482,8 +503,20 @@ export class Workspace extends EventTarget {
     await this.store.refresh();
     this.renderTabs();
     this.changed();
-    if (!updates.size) return;
     const map = (p) => (p === from ? to : p.startsWith(`${from}/`) ? to + p.slice(from.length) : p);
+    // Closed canvases keep pointing at their cards' files (open ones follow in pathRenamed).
+    if (prefs.get('autoUpdateLinks')) {
+      for (const canvasPath of this.store.files.filter((f) => /\.canvas$/i.test(f))) {
+        if (this.views.some((v) => v.type === 'canvas' && v.path === canvasPath)) continue;
+        try {
+          const next = renameInCanvas(await api.read(canvasPath), map);
+          if (next) await api.write(canvasPath, next);
+        } catch {
+          // An unreadable canvas is left as it is.
+        }
+      }
+    }
+    if (!updates.size) return;
     let count = 0;
     for (const [source, text] of updates) {
       try {
@@ -529,7 +562,7 @@ export class Workspace extends EventTarget {
   // Files changed on disk (sync, other editor): reload clean views, close views of deleted files.
   async vaultChanged() {
     for (const view of [...this.views]) {
-      if (view.type !== 'note' || !view.path) continue;
+      if ((view.type !== 'note' && view.type !== 'canvas') || !view.path) continue;
       if (!this.store.has(view.path) && !view.dirty) this.closeView(view);
       else view.reloadIfClean().catch(() => {});
     }
@@ -564,6 +597,7 @@ export class Workspace extends EventTarget {
     let view = null;
     if (saved?.type === 'graph') view = new GraphView({ workspace: this, store: this.store });
     else if (saved?.type === 'note' && saved.path && this.store.has(saved.path)) view = new NoteView({ workspace: this, store: this.store, path: saved.path });
+    else if (saved?.type === 'canvas' && saved.path && this.store.has(saved.path)) view = new CanvasView({ workspace: this, store: this.store, path: saved.path });
     if (view) view.pinned = Boolean(saved.pinned);
     return view;
   }
