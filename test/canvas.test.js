@@ -50,3 +50,16 @@ test('geometry helpers', () => {
   assert.deepEqual(bounds(c.nodes), { x: -20, y: -20, width: 600, height: 320 });
   assert.match(newId(), /^[0-9a-f]{16}$/);
 });
+
+test('renameInCanvas updates file cards that point into a renamed path', () => {
+  const { renameInCanvas } = require('../src/shared/canvas');
+  const map = (p) => (p === 'a.md' ? 'b.md' : p.startsWith('pasta/') ? `nova/${p.slice(6)}` : p);
+  const text = serializeCanvas(parseCanvas(JSON.stringify({ nodes: [
+    { id: '1', type: 'file', file: 'a.md', x: 0, y: 0, width: 10, height: 10 },
+    { id: '2', type: 'file', file: 'pasta/x.png', x: 0, y: 0, width: 10, height: 10 },
+    { id: '3', type: 'text', text: 'a.md', x: 0, y: 0, width: 10, height: 10 },
+  ] })));
+  const out = JSON.parse(renameInCanvas(text, map));
+  assert.deepEqual(out.nodes.map((n) => n.file ?? n.text), ['b.md', 'nova/x.png', 'a.md']);
+  assert.equal(renameInCanvas(text, (p) => p), null);
+});

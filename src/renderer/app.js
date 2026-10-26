@@ -75,6 +75,7 @@ const syncNow = () => api.syncNow().catch((err) => notice(err, { error: true }))
   { id: 'app:toggle-right-sidebar', name: 'Recolher/expandir barra lateral direita', hotkeys: ['Mod+Shift+B'], run: () => rightSidebar.toggle() },
   { id: 'file:new', name: 'Nova nota', hotkeys: ['Mod+N'], run: () => workspace.createNote() },
   { id: 'file:new-folder', name: 'Nova pasta', run: () => explorer.newFolder() },
+  { id: 'canvas:new', name: 'Novo canvas', run: () => workspace.createCanvas() },
   { id: 'file:rename', name: 'Renomear nota', hotkeys: ['F2'], check: noteView, run: () => noteView().focusTitle() },
   { id: 'file:delete', name: 'Excluir nota', check: noteView, run: () => workspace.deletePath(noteView().path) },
   { id: 'editor:save', name: 'Salvar nota', hotkeys: ['Mod+S'], check: textView, run: () => textView().save() },
@@ -145,6 +146,7 @@ $('#ribbon-actions').append(
   iconButton('file-plus', 'Nova nota (Ctrl+N)', run('file:new')),
   iconButton('calendar', 'Abrir nota diária de hoje (Alt+D)', run('daily:today')),
   iconButton('dices', 'Abrir nota aleatória', run('note:random')),
+  iconButton('canvas', 'Novo canvas', run('canvas:new')),
   iconButton('terminal', 'Abrir paleta de comandos (Ctrl+P)', run('app:command-palette')),
   iconButton('refresh', 'Sincronizar agora', syncNow),
 );
