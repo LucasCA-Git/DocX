@@ -76,3 +76,14 @@ test('resolveAsset also serves audio and video, with their types', async () => {
   await vault.write('nota.md', 'x');
   assert.equal(await resolveAsset(vault, assetUrl('nota.md')), null);
 });
+
+test('parseRange handles the byte ranges media players ask for', () => {
+  const { parseRange } = require('../src/main/asset-protocol');
+  assert.deepEqual(parseRange('bytes=0-', 1000), { start: 0, end: 999 });
+  assert.deepEqual(parseRange('bytes=100-199', 1000), { start: 100, end: 199 });
+  assert.deepEqual(parseRange('bytes=-100', 1000), { start: 900, end: 999 });
+  assert.deepEqual(parseRange('bytes=900-5000', 1000), { start: 900, end: 999 });
+  assert.equal(parseRange('bytes=2000-', 1000), 'invalid');
+  assert.equal(parseRange(null, 1000), null);
+  assert.equal(parseRange('bytes=0-1,5-6', 1000), null);
+});

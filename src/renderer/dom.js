@@ -1,6 +1,6 @@
 import {
   createElement,
-  ArrowLeft, ArrowRight, ArrowUpRight, CircleHelp, Pin, Rows2, Bookmark, Calendar, Dices, Bug, CircleCheck, Clipboard, Flame, Info, Quote, Zap, ArrowUpDown, Columns2, Copy, Folder, FolderInput, FolderOpen, ChevronDown, List, Tag, BookOpen, Check, ChevronRight, ChevronsDownUp, Cloud, CloudOff, EllipsisVertical,
+  ArrowLeft, ArrowRight, ArrowUpRight, CircleHelp, Group, LayoutDashboard, Link2, Maximize, Palette, Redo2, SquarePlus, StickyNote, Undo2, Pin, Rows2, Bookmark, Calendar, Dices, Bug, CircleCheck, Clipboard, Flame, Info, Quote, Zap, ArrowUpDown, Columns2, Copy, Folder, FolderInput, FolderOpen, ChevronDown, List, Tag, BookOpen, Check, ChevronRight, ChevronsDownUp, Cloud, CloudOff, EllipsisVertical,
   FilePlus, FileText, Files, FolderPlus, GitFork, History, Image, Link, PanelLeft, PanelRight, Pencil, Plus, RefreshCw, Search,
   Settings, SquareTerminal, Trash2, TriangleAlert, X, ArrowRightLeft,
 } from 'lucide';
@@ -10,6 +10,15 @@ const ICONS = {
   'arrow-right': ArrowRight,
   'arrow-up-right': ArrowUpRight,
   'chevron-down': ChevronDown,
+  group: Group,
+  canvas: LayoutDashboard,
+  'link-2': Link2,
+  maximize: Maximize,
+  palette: Palette,
+  redo: Redo2,
+  'square-plus': SquarePlus,
+  'sticky-note': StickyNote,
+  undo: Undo2,
   pin: Pin,
   rows: Rows2,
   bookmark: Bookmark,

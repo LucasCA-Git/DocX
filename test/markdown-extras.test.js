@@ -44,3 +44,9 @@ test('markdownBlocks finds tables, $$ math and mermaid fences with offsets', () 
     ['math', '$$y$$', 'y'],
   ]);
 });
+
+test('toggleTask counts tasks in quotes/callouts and skips front matter and comments, like the reading view', () => {
+  const text = '---\ntags: [x]\n---\n> [!todo]\n> - [ ] a\n%% - [ ] escondida %%\n- [ ] b';
+  assert.equal(toggleTask(text, 0), text.replace('> - [ ] a', '> - [x] a'));
+  assert.equal(toggleTask(text, 1), text.replace('- [ ] b', '- [x] b'));
+});

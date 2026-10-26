@@ -67,7 +67,14 @@ export async function renderMermaid(target, code) {
   try {
     const mermaid = await loadMermaid();
     const { svg } = await mermaid.render(`docs-mermaid-${++diagramCount}`, code);
-    target.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true }, ADD_TAGS: ['style'] });
+    // As an image: the diagram's own CSS (which a note can influence through themeCSS/classDef)
+    // cannot reach the rest of the app, and nothing in it can run.
+    const clean = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true }, ADD_TAGS: ['style'] });
+    const img = el('img', { class: 'mermaid-image', alt: 'Diagrama', src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(clean)}` });
+    // The SVG says width="100%": keep the diagram's natural width instead (from its viewBox).
+    const box = clean.match(/viewBox="[-\d.]+ [-\d.]+ ([\d.]+) [\d.]+"/);
+    if (box) img.style.width = `${Math.round(Number(box[1]))}px`;
+    target.replaceChildren(img);
   } catch (err) {
     target.replaceChildren(el('pre', { class: 'mermaid-error', text: `Erro no diagrama: ${err.message ?? err}` }));
   }
@@ -96,13 +103,38 @@ export function enhanceRendered(root, { onTask = null } = {}) {
   for (const quote of root.querySelectorAll('blockquote')) {
     const first = quote.firstElementChild;
     if (first?.tagName !== 'P') continue;
-    const m = first.innerHTML.match(/^\[!([\w-]+)\]([+-]?)[ \t]*([^\n]*?)(?:\n|<br>|$)/);
+    // Works on DOM nodes (never re-parses HTML strings, which could bring back what the sanitizer
+    // removed): the marker is cut from the first text node, the title is everything up to the
+    // first line break.
+    const head = first.firstChild;
+    const m = head?.nodeType === Node.TEXT_NODE ? head.textContent.match(/^\[!([\w-]+)\]([+-]?)[ \t]*/) : null;
     if (!m) continue;
+    head.textContent = head.textContent.slice(m[0].length);
+    const titleNodes = [];
+    for (let node = first.firstChild; node;) {
+      const next = node.nextSibling;
+      if (node.nodeName === 'BR') {
+        node.remove();
+        break;
+      }
+      if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('\n')) {
+        const cut = node.textContent.indexOf('\n');
+        titleNodes.push(document.createTextNode(node.textContent.slice(0, cut)));
+        node.textContent = node.textContent.slice(cut + 1);
+        break;
+      }
+      titleNodes.push(node);
+      node = next;
+    }
     const info = calloutInfo(m[1]);
-    const title = el('div', { class: 'callout-title' }, el('span', { class: 'callout-icon' }, icon(info.iconName, 16)), el('span', { class: 'callout-title-inner' }));
-    title.lastChild.innerHTML = m[3] || info.title;
-    first.innerHTML = first.innerHTML.slice(m[0].length);
-    if (!first.innerHTML.trim()) first.remove();
+    const inner = el('span', { class: 'callout-title-inner' });
+    if (titleNodes.some((n) => n.textContent.trim())) inner.append(...titleNodes);
+    else {
+      titleNodes.forEach((n) => n.remove?.());
+      inner.textContent = info.title;
+    }
+    const title = el('div', { class: 'callout-title' }, el('span', { class: 'callout-icon' }, icon(info.iconName, 16)), inner);
+    if (!first.textContent.trim() && !first.querySelector('img, input')) first.remove();
     const content = el('div', { class: 'callout-content' }, ...quote.childNodes);
     const callout = el(m[2] ? 'details' : 'div', { class: 'callout', dataset: { callout: info.type } });
     if (m[2]) {
@@ -127,7 +159,10 @@ export function enhanceRendered(root, { onTask = null } = {}) {
     });
   });
 
-  // Footnote links jump inside this rendering (embeds and previews have their own copies).
+  // Footnote links jump inside this rendering (embeds and previews have their own copies). The
+  // root may be rendered again (reading view): the listener is added once.
+  if (root.dataset.footnoteJumps) return;
+  root.dataset.footnoteJumps = '1';
   root.addEventListener('click', (event) => {
     const link = event.target.closest('a[href^="#"]');
     if (!link || link.dataset.href !== undefined || link.dataset.tag !== undefined || link.getAttribute('href') === '#') return;

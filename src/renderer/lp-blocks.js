@@ -88,7 +88,8 @@ class BlockWidget extends WidgetType {
     dom.addEventListener('mousedown', (event) => {
       if (event.target.closest('a')) return;
       event.preventDefault();
-      const line = view.state.doc.lineAt(Math.min(this.block.from, view.state.doc.length));
+      // The DOM may be reused after text above moved the block: ask the view where it is now.
+      const line = view.state.doc.lineAt(Math.min(view.posAtDOM(dom), view.state.doc.length));
       view.dispatch({ selection: { anchor: line.to } });
       view.focus();
     });

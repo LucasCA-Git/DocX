@@ -61,24 +61,27 @@ export class Pane {
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('application/x-docs-tab', '1');
       });
+      const isTabDrag = (event) => this.workspace.draggedView && event.dataTransfer.types.includes('application/x-docs-tab');
       tab.addEventListener('dragover', (event) => {
-        if (!this.workspace.draggedView) return;
+        if (!isTabDrag(event)) return;
         event.preventDefault();
         tab.classList.add('is-drop-target');
       });
       tab.addEventListener('dragleave', () => tab.classList.remove('is-drop-target'));
       tab.addEventListener('drop', (event) => {
+        if (!isTabDrag(event)) return;
         event.preventDefault();
         tab.classList.remove('is-drop-target');
         this.workspace.moveView(this.workspace.draggedView, this, this.views.indexOf(view));
       });
       return tab;
     }));
+    const tabDrag = (event) => this.workspace.draggedView && event.dataTransfer.types.includes('application/x-docs-tab');
     this.tabsEl.ondragover = (event) => {
-      if (this.workspace.draggedView) event.preventDefault();
+      if (tabDrag(event)) event.preventDefault();
     };
     this.tabsEl.ondrop = (event) => {
-      if (event.target !== this.tabsEl || !this.workspace.draggedView) return;
+      if (event.target !== this.tabsEl || !tabDrag(event)) return;
       event.preventDefault();
       this.workspace.moveView(this.workspace.draggedView, this, this.views.length);
     };
@@ -142,6 +145,7 @@ function resizeHandle(split, index, box, onResize) {
     const move = (e) => {
       const delta = (horizontal ? e.clientX : e.clientY) - start;
       const newA = Math.max(120, Math.min(sizeA + sizeB - 120, sizeA + delta));
+      if (!(sizeA + sizeB > 0)) return;
       split.sizes[index] = (total * newA) / (sizeA + sizeB);
       split.sizes[index + 1] = total - split.sizes[index];
       items[index].style.flex = `${split.sizes[index]} 1 0`;

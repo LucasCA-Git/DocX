@@ -133,6 +133,7 @@ export class Workspace extends EventTarget {
   // A new pane next to the active one (dir 'row' = to the right, 'column' = below) holding `view`
   // (an empty tab by default).
   split(dir = 'row', view = null) {
+    if (dir !== 'row' && dir !== 'column') dir = 'row';
     const current = this.activePane;
     const pane = new Pane(this);
     const parent = parentOf(this.layout, current);
@@ -166,6 +167,7 @@ export class Workspace extends EventTarget {
   removePane(pane) {
     const parent = parentOf(this.layout, pane);
     if (!parent) return;
+    const globalIndex = this.panes.indexOf(pane);
     const i = parent.children.indexOf(pane);
     parent.children.splice(i, 1);
     parent.sizes.splice(i, 1);
@@ -175,13 +177,15 @@ export class Workspace extends EventTarget {
       if (grand) grand.children[grand.children.indexOf(parent)] = only;
       else this.layout = only;
     }
-    const next = this.panes[Math.min(i, this.panes.length - 1)];
+    const next = this.panes[Math.min(globalIndex, this.panes.length - 1)];
     this.renderLayout();
     if (next.active) this.activate(next.active);
   }
 
   // Tab dragged to another position or pane.
   moveView(view, pane, index) {
+    // dragend may never fire (the dragged tab element is replaced on drop): clear it here.
+    this.draggedView = null;
     const from = this.paneOf(view);
     if (!view || !from) return;
     const old = from.views.indexOf(view);
@@ -375,7 +379,8 @@ export class Workspace extends EventTarget {
       const after = transform(before);
       if (after !== before) {
         view.applyText(after);
-        await view.save();
+        if (view.mode === 'reading') view.renderReading();
+        if (!(await view.save())) throw new Error('não foi possível salvar');
       }
       return after !== before;
     }
@@ -579,11 +584,11 @@ export class Workspace extends EventTarget {
         const children = node.children.map(build).filter(Boolean);
         if (!children.length) return null;
         if (children.length === 1) return children[0];
-        const sizes = Array.isArray(node.sizes) && node.sizes.length === node.children.length ? node.sizes : null;
+        const sizes = Array.isArray(node.sizes) && node.sizes.length === node.children.length && node.sizes.every((n) => Number.isFinite(n) && n > 0) ? node.sizes : null;
         return { type: 'split', dir: node.dir === 'column' ? 'column' : 'row', children, sizes: sizes && children.length === node.children.length ? sizes : children.map(() => 1) };
       }
       const pane = new Pane(this);
-      const made = (node?.views ?? []).map((v) => this.makeView(v));
+      const made = (Array.isArray(node?.views) ? node.views : []).map((v) => this.makeView(v));
       pane.views = made.filter(Boolean);
       if (!pane.views.length) return null;
       pane.active = made[node.active] ?? pane.views[0];

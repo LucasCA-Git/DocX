@@ -508,6 +508,7 @@ export class NoteView {
 
   // Copies the files into the attachments folder and inserts ![[ ]] for each one.
   async insertAttachments(files, from, to, { pasted }) {
+    const path = this.path;
     const setting = prefs.get('attachmentFolder').trim().replace(/^\/+|\/+$/g, '');
     const folder = setting.startsWith('.') ? joinPath(dirName(this.path), setting.replace(/^\.\/?/, '')) : setting;
     const stamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
@@ -525,8 +526,16 @@ export class NoteView {
     }
     if (!created.length) return;
     await this.store.refresh();
-    const insert = created.map((rel) => `${IMAGE_FILE.test(rel) || /\.(pdf|mp3|wav|ogg|m4a|mp4|webm)$/i.test(rel) ? '!' : ''}[[${linkTextFor(rel, this.store.index.lookup, this.path)}]]`).join('\n');
-    this.editor.dispatch({ changes: { from, to, insert }, selection: { anchor: from + insert.length } });
+    // Another note was opened meanwhile: the files are saved, the links are not inserted there.
+    if (this.path !== path) {
+      notice(`${created.length === 1 ? 'Anexo salvo' : 'Anexos salvos'} em "${dirName(created[0]) || '/'}".`);
+      return;
+    }
+    const insert = created.map((rel) => `${IMAGE_FILE.test(rel) || /\.(pdf|mp3|wav|ogg|m4a|mp4|webm)$/i.test(rel) ? '!' : ''}[[${linkTextFor(rel, this.store.index.lookup, path)}]]`).join('\n');
+    // The text may have changed while copying: insert at the cursor if the old range is gone.
+    const length = this.editor.state.doc.length;
+    const at = from <= length && to <= length ? { from, to } : this.editor.state.selection.main;
+    this.editor.dispatch({ changes: { from: at.from, to: at.to, insert }, selection: { anchor: at.from + insert.length } });
   }
 
   // ---------- saving ----------
