@@ -21,6 +21,17 @@ function nodeMatcher(query, tagsOf) {
   const groups = parseQuery(query ?? '');
   if (!groups.length) return () => true;
   const fold = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  // Regexes compiled once; very long patterns are refused (a typed /(a+)+/ freezes nothing big).
+  for (const group of groups) {
+    for (const term of group) {
+      if (term.kind !== 'regex') continue;
+      try {
+        term.re = term.value.length <= 200 ? new RegExp(term.value, term.flags.replace(/[^imsu]/g, '') || 'i') : null;
+      } catch {
+        term.re = null;
+      }
+    }
+  }
   const test = (term, node) => {
     const id = fold(node.id);
     const value = fold(term.value);
@@ -29,13 +40,7 @@ function nodeMatcher(query, tagsOf) {
       return tags.some((t) => fold(t) === value || fold(t).startsWith(`${value}/`));
     }
     if (term.kind === 'file') return fold(node.id.split('/').pop()).includes(value);
-    if (term.kind === 'regex') {
-      try {
-        return new RegExp(term.value, term.flags.replace(/[^imsu]/g, '') || 'i').test(node.id);
-      } catch {
-        return false;
-      }
-    }
+    if (term.kind === 'regex') return Boolean(term.re?.test(node.id));
     return id.includes(value);
   };
   return (node) => groups.some((group) => group.every((term) => test(term, node) !== term.negate));

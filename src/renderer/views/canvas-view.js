@@ -20,7 +20,7 @@ const MAX_UNDO = 100;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 // JSON Canvas preset colors "1"…"6".
 const PRESETS = { 1: '#e93147', 2: '#ec7500', 3: '#e0ac00', 4: '#08b94e', 5: '#00bfbc', 6: '#7852ee' };
-const colorOf = (c) => (c ? PRESETS[c] ?? (/^#[0-9a-f]{3,8}$/i.test(c) ? c : null) : null);
+const colorOf = (c) => (typeof c !== 'string' ? null : Object.hasOwn(PRESETS, c) ? PRESETS[c] : /^#[0-9a-f]{3,8}$/i.test(c) ? c : null);
 
 const svg = (tag, attrs = {}) => {
   const node = document.createElementNS(SVG_NS, tag);
@@ -294,7 +294,9 @@ export class CanvasView {
       } else if (n.type === 'link') {
         content.append(el('div', { class: 'canvas-link' },
           icon('link-2', 18),
-          el('a', { href: n.url, text: n.url, onclick: (e) => { e.preventDefault(); window.open(n.url); } })));
+          /^https?:\/\//i.test(n.url)
+            ? el('a', { href: n.url, text: n.url, onclick: (e) => { e.preventDefault(); window.open(n.url); } })
+            : el('span', { text: n.url })));
       }
       nodeEl.append(content);
     }

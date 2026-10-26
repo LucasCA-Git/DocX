@@ -63,3 +63,12 @@ test('renameInCanvas updates file cards that point into a renamed path', () => {
   assert.deepEqual(out.nodes.map((n) => n.file ?? n.text), ['b.md', 'nova/x.png', 'a.md']);
   assert.equal(renameInCanvas(text, (p) => p), null);
 });
+
+test('parseCanvas caps and cleans hostile input', () => {
+  const nodes = Array.from({ length: 6000 }, (_, i) => ({ id: String(i % 5500), type: 'text', text: '', x: 1e12, y: -1e12, width: 1e9, height: 10 }));
+  const c = parseCanvas(JSON.stringify({ nodes, edges: [] }));
+  assert.equal(c.nodes.length, 5000);
+  assert.equal(new Set(c.nodes.map((n) => n.id)).size, 5000);
+  assert.ok(c.nodes.every((n) => Math.abs(n.x) <= 1e6 && n.width <= 1e5));
+  assert.deepEqual(Object.keys(bounds(c.nodes)), ['x', 'y', 'width', 'height']);
+});

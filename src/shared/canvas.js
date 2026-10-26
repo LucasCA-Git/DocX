@@ -4,13 +4,25 @@
 // group) on an infinite board and edges between them. Unknown top-level fields are kept.
 
 const NODE_TYPES = new Set(['text', 'file', 'link', 'group']);
+// Limits for files from elsewhere (a remote repo): beyond them the board would hang.
+const MAX_NODES = 5000;
+const MAX_EDGES = 10000;
+const MAX_COORD = 1e6;
+const MAX_SIZE = 1e5;
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const SIDES = ['top', 'right', 'bottom', 'left'];
 const num = (v) => typeof v === 'number' && Number.isFinite(v);
 const str = (v) => typeof v === 'string';
 
 function cleanNode(n) {
   if (!n || !str(n.id) || !NODE_TYPES.has(n.type) || ![n.x, n.y, n.width, n.height].every(num)) return null;
-  const node = { ...n, width: Math.max(20, n.width), height: Math.max(20, n.height) };
+  const node = {
+    ...n,
+    x: clamp(n.x, -MAX_COORD, MAX_COORD),
+    y: clamp(n.y, -MAX_COORD, MAX_COORD),
+    width: clamp(n.width, 20, MAX_SIZE),
+    height: clamp(n.height, 20, MAX_SIZE),
+  };
   if (n.type === 'text' && !str(n.text)) node.text = '';
   if (n.type === 'file' && !str(n.file)) return null;
   if (n.type === 'link' && !str(n.url)) return null;
@@ -26,9 +38,16 @@ function parseCanvas(text) {
     return { nodes: [], edges: [] };
   }
   if (!data || typeof data !== 'object' || Array.isArray(data)) return { nodes: [], edges: [] };
-  const nodes = (Array.isArray(data.nodes) ? data.nodes : []).map(cleanNode).filter(Boolean);
-  const ids = new Set(nodes.map((n) => n.id));
-  const edges = (Array.isArray(data.edges) ? data.edges : []).filter((e) => e && str(e.id) && ids.has(e.fromNode) && ids.has(e.toNode))
+  const ids = new Set();
+  const nodes = [];
+  for (const raw of Array.isArray(data.nodes) ? data.nodes : []) {
+    if (nodes.length >= MAX_NODES) break;
+    const node = cleanNode(raw);
+    if (!node || ids.has(node.id)) continue;
+    ids.add(node.id);
+    nodes.push(node);
+  }
+  const edges = (Array.isArray(data.edges) ? data.edges : []).slice(0, MAX_EDGES).filter((e) => e && str(e.id) && ids.has(e.fromNode) && ids.has(e.toNode))
     .map((e) => {
       const edge = { ...e };
       if (!SIDES.includes(edge.fromSide)) delete edge.fromSide;
@@ -77,10 +96,16 @@ function nodesInGroup(nodes, group) {
 
 function bounds(nodes) {
   if (!nodes.length) return { x: 0, y: 0, width: 0, height: 0 };
-  const minX = Math.min(...nodes.map((n) => n.x));
-  const minY = Math.min(...nodes.map((n) => n.y));
-  const maxX = Math.max(...nodes.map((n) => n.x + n.width));
-  const maxY = Math.max(...nodes.map((n) => n.y + n.height));
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const n of nodes) {
+    minX = Math.min(minX, n.x);
+    minY = Math.min(minY, n.y);
+    maxX = Math.max(maxX, n.x + n.width);
+    maxY = Math.max(maxY, n.y + n.height);
+  }
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 

@@ -73,6 +73,7 @@ function parseRange(header, size) {
     start = Number(m[1]);
     end = m[2] === '' ? size - 1 : Math.min(Number(m[2]), size - 1);
   }
+  if (start > end && m[1] !== '' && m[2] !== '' && start < size) return null;
   if (start >= size || start > end) return 'invalid';
   return { start, end };
 }
