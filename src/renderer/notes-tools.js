@@ -110,7 +110,8 @@ export class Bookmarks extends EventTarget {
   constructor(workspace) {
     super();
     try {
-      this.items = JSON.parse(localStorage.getItem(BOOKMARKS_KEY)) ?? [];
+      const saved = JSON.parse(localStorage.getItem(BOOKMARKS_KEY));
+      this.items = (Array.isArray(saved) ? saved : []).filter((i) => (i?.type === 'file' && typeof i.path === 'string') || (i?.type === 'search' && typeof i.query === 'string'));
     } catch {
       this.items = [];
     }

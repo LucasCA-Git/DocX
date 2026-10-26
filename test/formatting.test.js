@@ -44,3 +44,8 @@ test('insertLink: selection becomes the text, a URL becomes the target', () => {
   assert.equal(apply('https://x.com', insertLink('https://x.com', 0, 13)), '[|](https://x.com)');
   assert.equal(apply('', insertLink('', 0, 0)), '[|]()');
 });
+
+test('italic on bold text adds a marker instead of stripping the bold', () => {
+  assert.equal(apply('**negrito**', wrap('**negrito**', 0, 11, '*')), '*[**negrito**]*');
+  assert.equal(apply('a **b** c', wrap('a **b** c', 4, 5, '*')), 'a ***[b]*** c');
+});

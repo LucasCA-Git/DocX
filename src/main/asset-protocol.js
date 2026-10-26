@@ -59,4 +59,22 @@ function assetHeaders(file) {
   };
 }
 
-module.exports = { resolveAsset, assetHeaders, IMAGE_RE };
+// "Range: bytes=a-b" (single range) → { start, end } inclusive; null for no/unsupported range
+// (answer the whole file); 'invalid' when it starts past the end (416).
+function parseRange(header, size) {
+  const m = /^bytes=(\d*)-(\d*)$/.exec(header ?? '');
+  if (!m || (m[1] === '' && m[2] === '')) return null;
+  let start;
+  let end;
+  if (m[1] === '') {
+    start = Math.max(0, size - Number(m[2]));
+    end = size - 1;
+  } else {
+    start = Number(m[1]);
+    end = m[2] === '' ? size - 1 : Math.min(Number(m[2]), size - 1);
+  }
+  if (start >= size || start > end) return 'invalid';
+  return { start, end };
+}
+
+module.exports = { resolveAsset, assetHeaders, parseRange, IMAGE_RE };

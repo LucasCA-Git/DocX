@@ -9,7 +9,9 @@ const { SyncEngine } = require('./sync/engine');
 const { SyncState } = require('./sync/state');
 const { S3Remote } = require('./sync/s3-remote');
 const { GitSync } = require('./sync/git-sync');
-const { resolveAsset, assetHeaders } = require('./asset-protocol');
+const { resolveAsset, assetHeaders, parseRange } = require('./asset-protocol');
+const { createReadStream } = require('node:fs');
+const { Readable } = require('node:stream');
 const { ASSET_SCHEME } = require('../shared/asset-url');
 
 const SYNC_INTERVAL_MS = 30_000;
@@ -274,7 +276,17 @@ function registerAssetProtocol() {
   protocol.handle(ASSET_SCHEME, async (request) => {
     const full = await resolveAsset(vault, request.url);
     if (!full) return new Response('Not found', { status: 404 });
-    return new Response(await fs.readFile(full), { headers: assetHeaders(full) });
+    // Streamed, with byte ranges so audio/video can seek without loading the whole file.
+    const { size } = await fs.stat(full);
+    const headers = { ...assetHeaders(full), 'Accept-Ranges': 'bytes' };
+    const range = parseRange(request.headers.get('range'), size);
+    if (range === 'invalid') return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
+    const { start, end } = range ?? { start: 0, end: size - 1 };
+    const body = size ? Readable.toWeb(createReadStream(full, { start, end })) : null;
+    return new Response(body, {
+      status: range ? 206 : 200,
+      headers: { ...headers, 'Content-Length': String(end - start + 1), ...(range ? { 'Content-Range': `bytes ${start}-${end}/${size}` } : {}) },
+    });
   });
 }
 

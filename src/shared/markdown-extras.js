@@ -5,11 +5,21 @@
 
 const { maskFences } = require('./links');
 
-const TASK_RE = /^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\])/;
+const TASK_RE = /^((?:[ \t]*>)*[ \t]*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\])/;
 
-// The text with the index-th checklist item (counted outside code blocks) ticked or unticked.
+// Same length as text: code, front matter and %%comments%% blanked (what the reading view does not
+// show as tasks).
+function maskForTasks(text) {
+  const blank = (m) => m.replace(/[^\n]/g, ' ');
+  return maskFences(text)
+    .replace(/^---\r?\n(?:[\s\S]*?\r?\n)?---[ \t]*(?=\r?\n|$)/, blank)
+    .replace(/%%[\s\S]*?%%/g, blank);
+}
+
+// The text with the index-th checklist item ticked or unticked, counting tasks in the order the
+// reading view shows checkboxes (lists, quotes and callouts; not code, front matter, comments).
 function toggleTask(text, index) {
-  const masked = maskFences(text).split('\n');
+  const masked = maskForTasks(text).split('\n');
   const lines = text.split('\n');
   let n = 0;
   for (let i = 0; i < lines.length; i++) {

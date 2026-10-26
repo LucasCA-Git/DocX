@@ -38,6 +38,41 @@ export function confirmDialog(message, { confirmLabel = 'Confirmar', danger = fa
 
 let lastError = null;
 
+// In-app text prompt (window.prompt does not exist in Electron). Resolves to the text or null.
+export function promptDialog(message, { placeholder = '', value = '', confirmLabel = 'OK' } = {}) {
+  return new Promise((resolve) => {
+    const previous = document.activeElement;
+    const input = el('input', { placeholder, spellcheck: 'false' });
+    input.value = value;
+    const dialog = el('dialog', { class: 'modal-confirm' });
+    const done = (answer) => {
+      dialog.close();
+      dialog.remove();
+      previous?.focus?.();
+      resolve(answer);
+    };
+    const form = el('form', { method: 'dialog' },
+      el('p', { text: message }),
+      input,
+      el('div', { class: 'buttons' },
+        el('button', { type: 'button', text: 'Cancelar', onclick: () => done(null) }),
+        el('button', { type: 'submit', class: 'mod-cta', text: confirmLabel })));
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      done(input.value.trim() || null);
+    });
+    dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      done(null);
+    });
+    dialog.append(form);
+    document.body.append(dialog);
+    dialog.showModal();
+    input.focus();
+    input.select();
+  });
+}
+
 export function renderSyncStatus(status) {
   const node = $('#sync-status');
   node.className = 'status-item';

@@ -593,7 +593,7 @@ kbd.hotkey.is-conflict { border-color: var(--text-error); color: var(--text-erro
 .math-block { display: block; text-align: center; margin: 12px 0; overflow-x: auto; }
 .math-error { color: var(--text-error); font-family: var(--font-mono); }
 .mermaid-diagram { display: flex; justify-content: center; margin: 12px 0; color: var(--text-muted); }
-.mermaid-diagram svg { max-width: 100%; height: auto; }
+.mermaid-diagram svg, .mermaid-image { max-width: 100%; height: auto; }
 .mermaid-error { color: var(--text-error); white-space: pre-wrap; }
 
 .markdown-reading table { border-collapse: collapse; margin: 12px 0; }

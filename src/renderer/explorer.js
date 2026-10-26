@@ -298,7 +298,7 @@ export class Explorer {
     const lookup = this.store.index.lookup;
     showMenu([
       { label: 'Abrir em nova aba', icon: 'file-text', action: () => this.workspace.openFile(rel, { newTab: true }) },
-      ...(this.workspace.openSplit ? [{ label: 'Abrir à direita', icon: 'columns', action: () => this.workspace.openSplit(rel, 'vertical') }] : []),
+      ...(this.workspace.openSplit ? [{ label: 'Abrir à direita', icon: 'columns', action: () => this.workspace.openSplit(rel, 'row') }] : []),
       '-',
       { label: 'Renomear', icon: 'pencil', action: () => this.startRename(rel) },
       { label: 'Mover para…', icon: 'folder-input', action: () => this.moveTo(rel) },

@@ -4,13 +4,22 @@
 // { changes: [{ from, to, insert }], selection: { anchor, head } } for CodeMirror to apply.
 
 // Toggles inline markers (**, *, ~~, ==, `, %%) around a selection.
+// A single-character marker (*) must not mistake part of a longer run (** bold) for itself.
+function exactRun(text, at, marker, dir) {
+  if (marker.length !== 1) return true;
+  const beyond = dir < 0 ? text[at - 1] : text[at];
+  return beyond !== marker;
+}
+
 function wrap(doc, from, to, open, close = open) {
   const inner = doc.slice(from, to);
-  if (from !== to && inner.startsWith(open) && inner.endsWith(close) && inner.length >= open.length + close.length) {
+  if (from !== to && inner.startsWith(open) && inner.endsWith(close) && inner.length >= open.length + close.length
+    && exactRun(inner, open.length, open, 1) && exactRun(inner, inner.length - close.length, close, -1)) {
     const text = inner.slice(open.length, inner.length - close.length);
     return { changes: [{ from, to, insert: text }], selection: { anchor: from, head: from + text.length } };
   }
-  if (doc.slice(from - open.length, from) === open && doc.slice(to, to + close.length) === close) {
+  if (doc.slice(from - open.length, from) === open && doc.slice(to, to + close.length) === close
+    && exactRun(doc, from - open.length, open, -1) && exactRun(doc, to + close.length, close, 1)) {
     return {
       changes: [{ from: from - open.length, to: from, insert: '' }, { from: to, to: to + close.length, insert: '' }],
       selection: { anchor: from - open.length, head: to - open.length },
