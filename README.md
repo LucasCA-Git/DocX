@@ -1,83 +1,297 @@
-# Docs
+<p align="center">
+  <img src="build/icons/128x128.png" width="96" height="96" alt="Ícone do DocX">
+</p>
 
-Editor de notas Markdown no estilo Obsidian. As notas ficam numa pasta local (funciona offline) e
-são sincronizadas com um repositório Git seu (ex.: repositório privado no GitHub), com histórico de
-versões de cada nota. O S3 continua disponível como alternativa.
+<h1 align="center">DocX</h1>
 
-## Rodar (Windows, PowerShell)
+<p align="center">
+  Notas em Markdown com links entre notas, grafo, canvas e sincronização pelo <b>seu próprio repositório Git</b>.<br>
+  Windows · Ubuntu/Debian · Linux (AppImage)
+</p>
 
-```powershell
-npm install
-npm start
+---
+
+O DocX é um aplicativo desktop para escrever e organizar conhecimento em Markdown. As notas são
+arquivos `.md` comuns numa pasta do seu computador (o **vault**). Funcionam offline e podem ser
+abertas por qualquer editor. A cópia online fica num repositório Git que é **seu**, por exemplo um
+repositório privado no GitHub: nenhum servidor de terceiros guarda as suas notas, e cada nota ganha
+histórico de versões.
+
+## Sumário
+
+- [Recursos](#recursos)
+- [Instalação](#instalação)
+- [Primeiros passos](#primeiros-passos)
+- [Sincronização com Git](#sincronização-com-git-padrão)
+- [Sincronização com S3 (alternativa)](#sincronização-com-s3-alternativa)
+- [Escrevendo notas](#escrevendo-notas)
+- [Atalhos de teclado](#atalhos-de-teclado)
+- [Onde ficam os dados](#onde-ficam-os-dados)
+- [Privacidade e segurança](#privacidade-e-segurança)
+- [Desinstalar](#desinstalar)
+- [Desenvolvimento](#desenvolvimento)
+
+## Recursos
+
+**Escrita**
+- Editor com **Live Preview** (o Markdown vira formatação enquanto você escreve), modo de leitura e
+  alternância com `Ctrl+E`.
+- Links entre notas `[[nota]]`, `[[nota|apelido]]`, `[[nota#título]]` e `[[nota#^bloco]]`, com
+  autocompletar ao digitar `[[`.
+- Transclusão: `![[nota]]` e `![[nota#título]]` mostram o conteúdo de outra nota dentro da atual.
+- Prévia ao passar o mouse sobre um link.
+- Callouts (`> [!nota]`), `==destaque==`, `%%comentários%%`, tabelas, notas de rodapé, checklists
+  clicáveis, realce de código, fórmulas matemáticas (KaTeX) e diagramas Mermaid.
+- Propriedades (front matter YAML) em tabela, tags `#tag` e aliases.
+- Atalhos de formatação, buscar e substituir, dobrar títulos, modo Vim opcional e corretor
+  ortográfico em pt-BR/en-US.
+- Imagens, PDFs, áudio e vídeo: cole ou arraste para dentro da nota.
+
+**Organização**
+- Explorador de arquivos com pastas, ordenação, arrastar e soltar. Renomear ou mover uma nota
+  **atualiza todos os links** para ela.
+- Painel direito com backlinks, menções não ligadas (com o botão "Ligar"), links de saída, estrutura
+  (outline), tags e grafo local.
+- **Grafo** de todas as notas: grupos coloridos, tags como nós, setas, filtros e forças ajustáveis.
+- **Canvas** (`.canvas`, formato aberto JSON Canvas): cartões de texto, nota, imagem e link, com
+  conexões, grupos e cores.
+- Busca no vault com operadores: `tag:`, `path:`, `file:`, `"frase exata"`, `-excluir`, `OR` e
+  `/regex/`.
+- Notas diárias, modelos (`{{title}}`, `{{date}}`, `{{time}}`), favoritos e nota aleatória.
+- Paleta de comandos (`Ctrl+P`), troca rápida (`Ctrl+O`) e atalhos configuráveis.
+- Painéis divididos (direita/abaixo), abas fixas e navegação voltar/avançar.
+
+**Aparência e saída**
+- Tema escuro, claro ou do sistema, cor de destaque, tamanho de fonte e fontes de texto e código.
+- Exportar nota para PDF.
+
+**Sincronização**
+- **Git** (padrão): commit, envio e recebimento automáticos, histórico de versões por nota, cópia
+  de conflito em vez de sobrescrever e funcionamento offline.
+- **Amazon S3** como alternativa.
+
+## Instalação
+
+Os instaladores ficam na página de releases do projeto (ou na pasta `release/` depois de gerar o
+build, ver [Desenvolvimento](#desenvolvimento)).
+
+| Sistema | Arquivo | Como instalar |
+|---|---|---|
+| Windows 10/11 (64 bits) | `DocX-Setup-1.0.0.exe` | Assistente de instalação |
+| Ubuntu / Debian (64 bits) | `DocX-1.0.0-linux-amd64.deb` | `apt` ou Central de Aplicativos |
+| Qualquer Linux (64 bits) | `DocX-1.0.0-x86_64.AppImage` | Executável portátil, sem instalar |
+
+### Windows
+
+1. Execute `DocX-Setup-1.0.0.exe`.
+2. Na primeira vez, o Windows pode mostrar **"O Windows protegeu o computador"**, porque o instalador
+   ainda não tem assinatura digital. Clique em **Mais informações › Executar assim mesmo**.
+3. Siga o assistente: **Avançar**, escolha a pasta de instalação (opcional) e **Instalar**.
+4. Pronto: o DocX ganha **atalho na Área de Trabalho e no Menu Iniciar** e abre ao terminar.
+
+A instalação é por usuário (não pede senha de administrador, a menos que você escolha uma pasta do
+sistema, como `C:\Program Files`).
+
+**Requisito para sincronizar com Git:** [Git for Windows](https://git-scm.com/download/win). Ele
+já traz o Git Credential Manager, que faz o login no GitHub/GitLab.
+
+### Ubuntu / Debian
+
+```bash
+sudo apt install ./DocX-1.0.0-linux-amd64.deb
 ```
 
-Rode o `npm install` no Windows, não no WSL: ele baixa o Electron e o esbuild da plataforma onde roda.
+O `apt` instala junto as dependências, inclusive o `git`. O DocX aparece no menu de aplicativos,
+com ícone. Para abrir pelo terminal, use `docx`.
 
-## Configurar o Git (padrão)
+### Linux (AppImage)
 
-1. Crie um repositório **privado e vazio** no GitHub (ou GitLab etc.).
-2. Tenha o Git for Windows instalado (vem com o Git Credential Manager).
-3. No app, em ⚙ Configurações › Vault e sincronização: escolha a pasta, "Git", cole a URL
-   (`https://github.com/voce/notas.git` ou `git@github.com:voce/notas.git`) e a branch (`main`).
-4. Na primeira sincronização o Git pede o login (janela do Git Credential Manager). O app nunca vê
-   nem guarda senha ou token; URL com usuário/senha embutidos é recusada.
+```bash
+chmod +x DocX-1.0.0-x86_64.AppImage
+./DocX-1.0.0-x86_64.AppImage
+```
 
-Como funciona: a pasta vira um repositório Git. A cada edição (e a cada 30 s) o app faz commit,
-busca o que mudou no remoto, junta e envia. Se a mesma nota mudou nos dois lados, a versão remota
-vira "nota (conflito data).md" ao lado da sua — nada é perdido. Offline, os commits ficam locais e
-sobem quando a rede volta. Pastas/arquivos que começam com `.` não vão para o Git.
-Histórico: menu ⋮ da nota › Histórico de versões (ver diferenças e restaurar).
+Não precisa instalar. Para sincronizar com Git, tenha o `git` instalado (`sudo apt install git`,
+`sudo dnf install git` etc.). Em distribuições sem FUSE, rode com `--appimage-extract-and-run`.
 
-## Configurar o S3 (alternativa)
+## Primeiros passos
 
-1. Credenciais: o app lê o perfil do AWS CLI em `%USERPROFILE%\.aws` (`credentials` e `config`).
-2. Bucket (uma vez):
+1. Abra o DocX e vá em **⚙ Configurações › Vault e sincronização**.
+2. Em **Pasta das notas**, escolha uma pasta (nova ou com arquivos `.md` que você já tenha).
+3. Escolha como sincronizar: **Git** (recomendado), **S3** ou **nenhum** (só local).
+4. Crie a primeira nota com `Ctrl+N`, ou abra a troca rápida com `Ctrl+O` e digite um nome.
+
+## Sincronização com Git (padrão)
+
+### Configurar
+
+1. Crie um repositório **privado e vazio** no GitHub (ou GitLab, Gitea, Bitbucket…). Não marque
+   "Add README" nem `.gitignore`.
+2. No DocX, em **⚙ Configurações › Vault e sincronização**, escolha **Git** e preencha:
+   - **URL:** `https://github.com/seu-usuario/notas.git` ou `git@github.com:seu-usuario/notas.git`
+   - **Branch:** `main`
+3. Na primeira sincronização, o Git Credential Manager abre a janela de login. Se você já usa Git
+   nessa máquina com a mesma conta, ele reaproveita o login salvo e nada aparece.
+
+O DocX nunca vê nem guarda a sua senha ou token. Uma URL com credencial embutida
+(`https://usuario:token@...`) é recusada.
+
+### Como funciona
+
+- A pasta das notas vira um repositório Git (pasta `.git` dentro dela).
+- A cada edição, e também a cada 30 segundos, o DocX faz **commit → busca no remoto → junta →
+  envia**. Você não precisa digitar nenhum comando.
+- **Vários computadores:** aponte o DocX de cada um para o mesmo repositório. As mudanças de um
+  aparecem no outro.
+- **Conflitos:** se a mesma nota mudou em dois lugares, a sua versão fica e a versão remota é salva
+  ao lado como `nota (conflito AAAA-MM-DD HHMMSS).md`. Nada é perdido.
+- **Offline:** os commits ficam locais e sobem quando a conexão voltar.
+- **Histórico:** no menu **⋮** da nota, **Histórico de versões** mostra cada versão, a diferença
+  para a atual e permite restaurar qualquer uma.
+- A barra de status mostra o estado (sincronizado, sincronizando, sem conexão, erro) e tem
+  **Sincronizar agora**.
+- Arquivos e pastas que começam com `.` (por exemplo `.trash` e `.docs-sync`) não vão para o Git.
+
+Como é um repositório Git comum, você também pode usar `git log`, outros clientes Git ou outros
+editores de Markdown na mesma pasta.
+
+## Sincronização com S3 (alternativa)
+
+1. **Credenciais:** o DocX lê o perfil do AWS CLI (`~/.aws/credentials` e `~/.aws/config`; no
+   Windows, `%USERPROFILE%\.aws`).
+2. **Bucket** (uma vez):
    ```bash
    bash scripts/create-bucket.sh <nome-unico> sa-east-1 default
    ```
-   Cria o bucket privado, com versionamento e criptografia. A política IAM mínima está em
+   O script cria um bucket privado, com versionamento e criptografia. A política IAM mínima está em
    `scripts/iam-policy.json`.
-3. No app, em ⚙ Configurações: pasta das notas, bucket, região e perfil. Se a região estiver errada,
-   o app encontra a região do bucket sozinho.
+3. No DocX, escolha **S3** e informe bucket, região e perfil. Se a região estiver errada, o DocX
+   descobre a certa sozinho.
 
-## Como o sync S3 funciona
+O comportamento é o mesmo do Git: envio em menos de 1 segundo ao salvar, sincronização completa a
+cada 30 segundos, cópia de conflito e nota apagada vai para `.trash/` (recuperável pelo
+versionamento do bucket).
 
-- Ao abrir o app: sincronização completa (sobe o que é novo localmente, baixa o que é novo no bucket).
-- Ao salvar: a nota sobe em menos de 1 s. A cada 30 s há uma nova sincronização completa.
-- Editou nos dois lados ao mesmo tempo: nada é sobrescrito; a versão remota vira uma cópia
-  "nome (conflito data).md" ao lado da sua.
-- Apagou: a nota vai para `.trash/` na pasta local e é removida do bucket (recuperável pelo
-  versionamento).
-- Pastas e arquivos que começam com `.` (incluindo `.obsidian`, `.trash` e `.docs-sync`) não sincronizam.
+## Escrevendo notas
 
-## Atalhos
+| Escreva | Para obter |
+|---|---|
+| `[[Outra nota]]` | Link para outra nota |
+| `[[Outra nota\|texto]]` | Link com outro texto |
+| `[[Outra nota#Título]]` / `[[Outra nota#^id]]` | Link para um título / bloco |
+| `![[Outra nota]]` | Conteúdo da outra nota embutido |
+| `![[imagem.png\|300]]` | Imagem com 300 px de largura |
+| `#projeto/docx` | Tag (com hierarquia) |
+| `==texto==` | Destaque |
+| `%%oculto%%` | Comentário (não aparece na leitura) |
+| `$E = mc^2$` / `$$...$$` | Fórmula na linha / em bloco |
+| `> [!tip] Título` | Callout (`note`, `tip`, `warning`, `danger`, `info`, `todo`…) |
+| ```` ```mermaid ```` | Diagrama Mermaid |
+| `- [ ] tarefa` | Checklist |
+| `texto[^1]` + `[^1]: nota` | Nota de rodapé |
 
-Todos os comandos estão na paleta (Ctrl+P) e os atalhos podem ser mudados em Configurações ›
-Atalhos de teclado.
+Propriedades ficam no início da nota, em YAML:
+
+```yaml
+---
+tags: [estudo, git]
+aliases: [Controle de versão]
+status: em andamento
+---
+```
+
+## Atalhos de teclado
+
+Todos os comandos estão na paleta (`Ctrl+P`). Os atalhos podem ser mudados em **⚙ Configurações ›
+Atalhos de teclado**.
 
 | Atalho | Ação |
 |---|---|
-| Ctrl+P | Paleta de comandos |
-| Ctrl+O | Troca rápida (abrir/criar nota) |
-| Ctrl+N | Nova nota |
-| Alt+D | Nota diária de hoje |
-| Alt+T | Inserir modelo |
-| Ctrl+Shift+F | Buscar no vault (`tag:`, `path:`, `file:`, `"frase"`, `-excluir`, `OR`, `/regex/`) |
-| Ctrl+G | Visualização em gráfico |
-| Ctrl+Shift+B | Barra lateral direita (backlinks, links de saída, estrutura, tags, grafo local) |
-| Ctrl+E | Alternar edição e leitura |
-| Ctrl+B / Ctrl+I / Ctrl+K | Negrito / itálico / link |
-| Ctrl+L | Alternar caixa de seleção |
-| Ctrl+H | Buscar e substituir na nota |
-| Ctrl+T / Ctrl+W | Nova aba / fechar aba |
-| Alt+← / Alt+→ | Voltar / avançar |
-| Ctrl+, | Configurações |
-| Ctrl+clique | Seguir link / abrir em nova aba |
+| `Ctrl+P` | Paleta de comandos |
+| `Ctrl+O` | Troca rápida (abrir ou criar nota) |
+| `Ctrl+N` | Nova nota |
+| `Alt+D` | Nota diária de hoje |
+| `Alt+T` | Inserir modelo |
+| `Ctrl+Shift+F` | Buscar no vault |
+| `Ctrl+G` | Grafo |
+| `Ctrl+Shift+B` | Barra lateral direita |
+| `Ctrl+E` | Alternar edição e leitura |
+| `Ctrl+B` / `Ctrl+I` / `Ctrl+K` | Negrito / itálico / link |
+| `Ctrl+L` | Alternar caixa de seleção |
+| `Ctrl+H` | Buscar e substituir na nota |
+| `Ctrl+T` / `Ctrl+W` | Nova aba / fechar aba |
+| `Alt+←` / `Alt+→` | Voltar / avançar |
+| `Ctrl+,` | Configurações |
+| `Ctrl+clique` | Seguir link / abrir em nova aba |
+
+## Onde ficam os dados
+
+| O quê | Onde |
+|---|---|
+| Suas notas | Na pasta escolhida como vault (arquivos `.md` comuns) |
+| Configurações do app | Windows: `%APPDATA%\DocX` · Linux: `~/.config/DocX` |
+| Lixeira | `.trash/` dentro do vault |
+
+As configurações nunca vão para o Git nem para o S3. Quem usava a versão anterior (chamada "Docs")
+tem as configurações copiadas automaticamente na primeira abertura do DocX.
+
+## Privacidade e segurança
+
+- Sem servidor próprio, sem conta e sem telemetria: as notas vão apenas para o repositório ou bucket
+  que você configurou.
+- Login do Git fica com o Git Credential Manager ou com a sua chave SSH. O DocX não lê nem guarda
+  senhas ou tokens.
+- O DocX ignora hooks e configurações perigosas de repositórios Git, e só aceita remotos `https` e
+  `ssh`.
+- O conteúdo das notas é sanitizado antes de ser exibido. Links externos abrem no navegador, e
+  arquivos locais só são lidos de dentro do vault.
+- Plugins de terceiros não são suportados, por segurança.
+
+## Desinstalar
+
+- **Windows:** Configurações › Aplicativos › DocX › Desinstalar.
+- **Ubuntu/Debian:** `sudo apt remove docx-notes`.
+- **AppImage:** apague o arquivo.
+
+As notas e as configurações não são apagadas.
 
 ## Desenvolvimento
 
-- `npm test`: testes (`node --test`) dos motores de sync (Git e S3), do vault, do índice de links e
-  dos módulos de Markdown, busca, grafo e canvas.
-- `npm run build`: empacota o renderer em `dist/renderer`.
-- Planejamento (BMAD): `_bmad-output/specs/spec-obsidian-layout-graph/` (fase 1) e
-  `_bmad-output/specs/spec-obsidian-full-git/` (paridade com o Obsidian e Git).
+Requisitos: Node.js 20+ e Git.
+
+```bash
+npm install
+npm start            # compila o renderer e abre o app
+npm test             # testes (node --test)
+```
+
+No Windows, rode `npm install` no próprio Windows (PowerShell), não no WSL: o Electron e o esbuild
+são baixados para a plataforma onde o comando roda.
+
+### Gerar os instaladores
+
+```bash
+npm run dist:win     # no Windows  → release/DocX-Setup-<versão>.exe
+npm run dist:linux   # no Linux/WSL → release/DocX-<versão>-linux-amd64.deb e .AppImage
+```
+
+O empacotamento usa o [electron-builder](https://www.electron.build). O instalador do Windows
+(NSIS) precisa ser gerado no Windows, e os pacotes Linux no Linux (o WSL serve). O ícone fica em
+`build/icon.svg`, com as versões PNG em `build/icon.png` e `build/icons/`.
+
+### Estrutura
+
+```
+src/
+  main/       processo principal: janela, vault, configurações, sync Git (sync/git-sync.js) e S3
+  preload/    ponte segura entre o main e a interface
+  renderer/   interface: editor, explorador, grafo, canvas, painéis, configurações
+  shared/     lógica pura (links, Markdown, busca, grafo, canvas, modelos…), coberta por testes
+test/         testes unitários e de integração (incluem repositórios Git locais)
+scripts/      build do renderer e criação do bucket S3
+build/        ícones e recursos dos instaladores
+```
+
+## Licença
+
+© 2026 Lucas Cardoso Alecrim. Todos os direitos reservados.
