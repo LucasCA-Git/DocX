@@ -14,7 +14,7 @@ import { EDITOR_COMMANDS } from './editor-setup';
 import { setupAppearance } from './appearance';
 import { prefs } from './prefs';
 import {
-  openDailyNote, openAdjacentDaily, insertTemplate, openRandomNote, createUniqueNote, Bookmarks, renderBookmarks,
+  openDailyNote, openAdjacentDaily, insertTemplate, createUniqueNote, Bookmarks, renderBookmarks,
 } from './notes-tools';
 
 const api = window.docs;
@@ -111,7 +111,6 @@ const syncNow = () => api.syncNow().catch((err) => notice(err, { error: true }))
   { id: 'daily:previous', name: 'Nota diária anterior', run: () => openAdjacentDaily({ workspace, store }, -1) },
   { id: 'daily:next', name: 'Próxima nota diária', run: () => openAdjacentDaily({ workspace, store }, 1) },
   { id: 'template:insert', name: 'Inserir modelo', hotkeys: ['Alt+T'], check: () => editorView(), run: () => insertTemplate({ store, view: editorView() }) },
-  { id: 'note:random', name: 'Abrir nota aleatória', run: () => openRandomNote({ workspace, store }) },
   { id: 'note:unique', name: 'Nova nota única (data e hora)', run: () => createUniqueNote({ workspace, store }) },
   { id: 'bookmark:toggle', name: 'Favoritar/desfavoritar nota', check: noteView, run: () => bookmarks.toggleFile(noteView().path) },
   { id: 'bookmark:search', name: 'Favoritar a busca atual', check: () => search.input.value.trim(), run: () => bookmarks.addSearch(search.input.value) },
@@ -151,7 +150,6 @@ $('#ribbon-actions').append(
   iconButton('graph', 'Abrir visualização em gráfico (Ctrl+G)', run('graph:open')),
   iconButton('file-plus', 'Nova nota (Ctrl+N)', run('file:new')),
   iconButton('calendar', 'Abrir nota diária de hoje (Alt+D)', run('daily:today')),
-  iconButton('dices', 'Abrir nota aleatória', run('note:random')),
   iconButton('canvas', 'Novo canvas', run('canvas:new')),
   iconButton('pen-tool', 'Novo desenho', run('drawing:new')),
   iconButton('workflow', 'Novo diagrama', run('diagram:new')),

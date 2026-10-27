@@ -70,7 +70,7 @@ histórico de versões.
   conexões, grupos e cores.
 - Busca no vault com operadores: `tag:`, `path:`, `file:`, `"frase exata"`, `-excluir`, `OR` e
   `/regex/`.
-- Notas diárias, modelos (`{{title}}`, `{{date}}`, `{{time}}`), favoritos e nota aleatória.
+- Notas diárias, modelos (`{{title}}`, `{{date}}`, `{{time}}`), e favoritos.
 - Paleta de comandos (`Ctrl+P`), troca rápida (`Ctrl+O`) e atalhos configuráveis.
 - Painéis divididos (direita/abaixo), abas fixas e navegação voltar/avançar.
 

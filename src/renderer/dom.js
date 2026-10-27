@@ -1,6 +1,6 @@
 import {
   createElement,
-  ArrowLeft, ArrowRight, ArrowUpRight, CircleHelp, FileDown, Group, LayoutDashboard, Link2, Maximize, Palette, Redo2, SquarePlus, StickyNote, Undo2, Pin, Rows2, Bookmark, Calendar, Dices, Bug, CircleCheck, Clipboard, Flame, Info, Quote, Zap, ArrowUpDown, Columns2, Copy, Folder, FolderInput, FolderOpen, ChevronDown, List, Tag, BookOpen, Check, ChevronRight, ChevronsDownUp, Cloud, CloudOff, EllipsisVertical,
+  ArrowLeft, ArrowRight, ArrowUpRight, CircleHelp, FileDown, Group, LayoutDashboard, Link2, Maximize, Palette, Redo2, SquarePlus, StickyNote, Undo2, Pin, Rows2, Bookmark, Calendar, Bug, CircleCheck, Clipboard, Flame, Info, Quote, Zap, ArrowUpDown, Columns2, Copy, Folder, FolderInput, FolderOpen, ChevronDown, List, Tag, BookOpen, Check, ChevronRight, ChevronsDownUp, Cloud, CloudOff, EllipsisVertical,
   FilePlus, FileText, Files, FolderPlus, GitFork, History, Image, Link, PanelLeft, PanelRight, Pencil, Plus, RefreshCw, Search,
   Settings, SquareTerminal, Trash2, TriangleAlert, X, ArrowRightLeft, PenTool, Workflow,
 } from 'lucide';
@@ -26,7 +26,6 @@ const ICONS = {
   rows: Rows2,
   bookmark: Bookmark,
   calendar: Calendar,
-  dices: Dices,
   bug: Bug,
   'circle-check': CircleCheck,
   clipboard: Clipboard,

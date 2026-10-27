@@ -83,13 +83,7 @@ export function insertTemplate({ store, view }) {
   });
 }
 
-// ---------- random and unique notes ----------
-
-export function openRandomNote({ workspace, store }) {
-  const notes = store.files.filter((f) => /\.md$/i.test(f) && f !== workspace.activePath);
-  if (!notes.length) return;
-  workspace.openFile(notes[Math.floor(Math.random() * notes.length)]);
-}
+// ---------- unique notes ----------
 
 export async function createUniqueNote({ workspace, store }) {
   const stem = formatDate(new Date(), 'YYYYMMDDHHmm');
