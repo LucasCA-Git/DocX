@@ -3,6 +3,7 @@ import { renderDocStats } from '../status';
 import {
   graphData, nodeRadius, toWorld, zoomAt, hitTest,
 } from '../../shared/graph-model';
+import { makeStarfield, twinkle } from '../../shared/graph-physics';
 
 const OPTIONS_KEY = 'docs.graph';
 const UPDATE_DELAY_MS = 300;
@@ -23,6 +24,49 @@ const COLORS = {
 const LINK_BATCH = 256;
 const SPRITE_SIZE = 64;
 
+// Constellation look: a night sky, notes as glowing stars, links as faint star lines.
+const SKY = {
+  stars: makeStarfield(320, 2026),
+  note: '#d6e4ff',
+  attachment: '#ffd27a',
+  unresolved: '#6b7393',
+  tag: '#7ee0d4',
+  link: 'rgba(150, 175, 255, 0.38)',
+  glow: 'rgba(120, 150, 255, 0.07)',
+  label: '#c9d4ff',
+};
+// Above this many nodes the sky stops animating on its own (the simulation still redraws it).
+const SKY_ANIMATION_MAX_NODES = 3000;
+
+const withAlpha = (color, a) => {
+  const hex = /^#([0-9a-f]{6})$/i.exec(color);
+  if (!hex) return `rgba(255, 255, 255, ${a})`;
+  const n = parseInt(hex[1], 16);
+  return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
+
+// A star: white core, colored halo fading out. Drawn at twice the node's radius.
+const GLOWS = new Map();
+function glowSprite(color) {
+  if (!GLOWS.has(color)) {
+    const canvas = document.createElement('canvas');
+    canvas.width = SPRITE_SIZE;
+    canvas.height = SPRITE_SIZE;
+    const c = canvas.getContext('2d');
+    const half = SPRITE_SIZE / 2;
+    const g = c.createRadialGradient(half, half, 0, half, half, half);
+    g.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    g.addColorStop(0.16, 'rgba(255, 255, 255, 0.95)');
+    g.addColorStop(0.3, withAlpha(color, 0.95));
+    g.addColorStop(0.55, withAlpha(color, 0.28));
+    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+    GLOWS.set(color, canvas);
+  }
+  return GLOWS.get(color);
+}
+
 // One antialiased circle per color, scaled to each node's size when drawn.
 const SPRITES = new Map();
 function sprite(color) {
@@ -40,13 +84,13 @@ function sprite(color) {
   return SPRITES.get(color);
 }
 
-export const DEFAULT_FORCES = { center: 0.04, repel: 90, link: 0.6, distance: 40 };
+export const DEFAULT_FORCES = { center: 0.04, repel: 90, link: 0.6, distance: 40, spin: 1 };
 const GROUP_COLORS = ['#e9973f', '#4fb3a9', '#e05d6f', '#5b8def', '#b07de8', '#7cc56b'];
 
 function loadOptions(key) {
   const defaults = {
     attachments: true, unresolved: false, orphans: true, tags: false, arrows: false, search: '',
-    groups: [], depth: 1, nodeSize: 1, forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
+    groups: [], depth: 1, nodeSize: 1, constellation: true, gravity: true, forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
   };
   try {
     const saved = JSON.parse(localStorage.getItem(key)) ?? {};
@@ -99,7 +143,7 @@ export class GraphView {
 
     this.worker = new Worker('graph-worker.js');
     this.worker.onmessage = ({ data }) => this.onWorker(data);
-    this.worker.postMessage({ type: 'forces', forces: this.options.forces });
+    this.sendForces();
 
     this.canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
     this.canvas.addEventListener('pointermove', (e) => this.onPointerMove(e));
@@ -150,6 +194,16 @@ export class GraphView {
       input.addEventListener('change', () => this.setOption(key, input.checked));
       return el('label', { class: 'graph-toggle' }, input, label);
     };
+    // Switches that change only the look or the physics (no new layout, camera stays).
+    const visual = (key, label, apply) => {
+      const input = el('input', { type: 'checkbox', checked: this.options[key] });
+      input.addEventListener('change', () => {
+        this.options[key] = input.checked;
+        save();
+        apply();
+      });
+      return el('label', { class: 'graph-toggle' }, input, label);
+    };
     const slider = (label, value, min, max, step, onInput) => {
       const input = el('input', { type: 'range', min, max, step, class: 'graph-slider' });
       input.value = value;
@@ -172,7 +226,7 @@ export class GraphView {
     const force = (key, label, min, max, step) => slider(label, this.options.forces[key], min, max, step, (v) => {
       this.options.forces[key] = v;
       save();
-      this.worker.postMessage({ type: 'forces', forces: this.options.forces });
+      this.sendForces();
     });
 
     if (!this.panelOpen) {
@@ -233,6 +287,7 @@ export class GraphView {
           },
         })),
       section('display', 'Exibição',
+        visual('constellation', 'Constelação (céu estrelado)', () => this.requestDraw()),
         toggle('arrows', 'Setas'),
         slider('Tamanho dos nós', this.options.nodeSize, 0.5, 3, 0.1, (v) => {
           this.options.nodeSize = v;
@@ -240,11 +295,17 @@ export class GraphView {
           this.requestDraw();
         })),
       section('forces', 'Forças',
+        visual('gravity', 'Gravidade (movimento contínuo)', () => this.sendForces()),
+        force('spin', 'Velocidade da órbita', 0, 3, 0.1),
         force('center', 'Atração ao centro', 0, 0.3, 0.01),
         force('repel', 'Repulsão', 0, 400, 5),
         force('link', 'Força dos links', 0, 1, 0.05),
         force('distance', 'Distância dos links', 10, 300, 5)),
     );
+  }
+
+  sendForces() {
+    this.worker.postMessage({ type: 'forces', forces: { ...this.options.forces, gravity: this.options.gravity } });
   }
 
   saveOptions() {
@@ -475,8 +536,12 @@ export class GraphView {
     } = this;
     if (!this.width) return;
     this.themeColors();
+    const sky = this.options.constellation;
+    const time = performance.now() / 16.667;
+    const palette = sky ? SKY : COLORS;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    if (sky) this.drawSky(time);
     ctx.setTransform(dpr * cam.k, 0, 0, dpr * cam.k, dpr * cam.x, dpr * cam.y);
 
     const near = hover >= 0 ? this.neighbours[hover] : null;
@@ -494,8 +559,20 @@ export class GraphView {
 
     // Links: dimmed while hovering, the hovered node's links in the accent color. One device pixel
     // wide: Skia draws hairlines about 10x faster than wider strokes (4000 links: 5 ms vs 58 ms).
+    // In the sky, a soft wide stroke first gives the star lines a glow (skipped on big graphs).
+    if (sky && this.linkIndex.length <= 1500) {
+      ctx.lineWidth = 4 / (cam.k * dpr);
+      ctx.strokeStyle = SKY.glow;
+      ctx.globalAlpha = hover >= 0 ? 0.35 : 1;
+      ctx.beginPath();
+      for (const [a, b] of this.linkIndex) {
+        ctx.moveTo(x(a), y(a));
+        ctx.lineTo(x(b), y(b));
+      }
+      ctx.stroke();
+    }
     ctx.lineWidth = 1 / (cam.k * dpr);
-    ctx.strokeStyle = COLORS.link;
+    ctx.strokeStyle = palette.link;
     ctx.globalAlpha = hover >= 0 ? 0.35 : 1;
     let segments = 0;
     ctx.beginPath();
@@ -511,7 +588,7 @@ export class GraphView {
     ctx.stroke();
     // Arrow heads at the target end, once zoomed in enough to see them.
     if (this.options.arrows && cam.k > 0.5) {
-      ctx.fillStyle = COLORS.link;
+      ctx.fillStyle = palette.link;
       ctx.beginPath();
       const size = 6 / cam.k;
       for (const [a, b] of this.linkIndex) {
@@ -552,8 +629,14 @@ export class GraphView {
       if (!onScreen(i)) continue;
       const r = nodeRadius(nodes[i].degree) * this.options.nodeSize;
       ctx.globalAlpha = hover >= 0 && !lit(i) ? 0.25 : 1;
-      const color = i === hover || i === centerIndex ? COLORS.highlight : groupColors[nodes[i].group] ?? COLORS[nodes[i].type];
-      ctx.drawImage(sprite(color), x(i) - r, y(i) - r, r * 2, r * 2);
+      const color = i === hover || i === centerIndex ? COLORS.highlight : groupColors[nodes[i].group] ?? palette[nodes[i].type];
+      if (sky) {
+        // Stars twinkle a little, each at its own pace; the halo reaches twice the radius.
+        ctx.globalAlpha *= 0.8 + 0.2 * Math.sin(time * 0.05 + i * 2.4);
+        ctx.drawImage(glowSprite(color), x(i) - r * 2, y(i) - r * 2, r * 4, r * 4);
+      } else {
+        ctx.drawImage(sprite(color), x(i) - r, y(i) - r, r * 2, r * 2);
+      }
     }
 
     // Labels under the nodes, sized in world units so they grow with zoom.
@@ -562,7 +645,7 @@ export class GraphView {
     ctx.font = `${this.isLocal ? 10 : 12}px Inter, system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillStyle = COLORS.label;
+    ctx.fillStyle = palette.label;
     for (let i = 0; i < nodes.length; i++) {
       if (!onScreen(i)) continue;
       let alpha = fade;
@@ -570,7 +653,31 @@ export class GraphView {
       else if (hover >= 0) alpha = fade * 0.3;
       if (alpha <= 0.02) continue;
       ctx.globalAlpha = alpha;
-      ctx.fillText(nodes[i].label, x(i), y(i) + nodeRadius(nodes[i].degree) * this.options.nodeSize + 4);
+      ctx.fillText(nodes[i].label, x(i), y(i) + nodeRadius(nodes[i].degree) * this.options.nodeSize * (sky ? 1.4 : 1) + 4);
+    }
+    ctx.globalAlpha = 1;
+    // The sky keeps twinkling even when the layout is still.
+    if (sky && nodes.length <= SKY_ANIMATION_MAX_NODES) this.requestDraw();
+  }
+
+  // Night sky in screen space: a deep blue gradient and twinkling background stars that move a
+  // little with the camera (farther stars move less).
+  drawSky(time) {
+    const { ctx, dpr, cam, width, height } = this;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const g = ctx.createRadialGradient(width * 0.5, height * 0.45, 0, width * 0.5, height * 0.5, Math.max(width, height) * 0.8);
+    g.addColorStop(0, '#16203f');
+    g.addColorStop(0.5, '#0c1129');
+    g.addColorStop(1, '#04050c');
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#ffffff';
+    for (const s of SKY.stars) {
+      const px = (((s.x * width + cam.x * 0.06 * s.depth) % width) + width) % width;
+      const py = (((s.y * height + cam.y * 0.06 * s.depth) % height) + height) % height;
+      ctx.globalAlpha = twinkle(s.base, s.phase, time);
+      ctx.fillRect(px, py, s.r, s.r);
     }
     ctx.globalAlpha = 1;
   }
@@ -580,6 +687,7 @@ export class GraphView {
   onShow() {
     renderDocStats(null);
     this.visible = true;
+    this.worker.postMessage({ type: 'resume' });
     this.resize();
     if (this.stale) {
       this.stale = false;
@@ -591,6 +699,7 @@ export class GraphView {
 
   onHide() {
     this.visible = false;
+    this.worker.postMessage({ type: 'pause' });
   }
 
   destroy() {

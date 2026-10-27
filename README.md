@@ -65,7 +65,10 @@ histórico de versões.
   **atualiza todos os links** para ela.
 - Painel direito com backlinks, menções não ligadas (com o botão "Ligar"), links de saída, estrutura
   (outline), tags e grafo local.
-- **Grafo** de todas as notas: grupos coloridos, tags como nós, setas, filtros e forças ajustáveis.
+- **Grafo** de todas as notas em estilo **constelação**: céu estrelado, notas como estrelas que
+  brilham e linhas de constelação. Com a **gravidade** ligada, as notas orbitam devagar o centro e
+  flutuam, e arrastar uma estrela puxa as vizinhas. Também tem grupos coloridos, tags como nós,
+  setas, filtros e forças ajustáveis (as duas opções podem ser desligadas no painel do grafo).
 - **Canvas** (`.canvas`, formato aberto JSON Canvas): cartões de texto, nota, imagem e link, com
   conexões, grupos e cores.
 - Busca no vault com operadores: `tag:`, `path:`, `file:`, `"frase exata"`, `-excluir`, `OR` e
