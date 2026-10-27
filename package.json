@@ -2,7 +2,7 @@
   "name": "docx-notes",
   "productName": "DocX",
   "desktopName": "docx.desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "DocX: editor de notas Markdown com links, grafo, canvas e sincronização pelo seu próprio repositório Git",
   "author": {
     "name": "Lucas Cardoso Alecrim",
