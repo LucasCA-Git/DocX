@@ -5,7 +5,7 @@
 <h1 align="center">DocX</h1>
 
 <p align="center">
-  Notas em Markdown com links entre notas, grafo, canvas e sincronização pelo <b>seu próprio repositório Git</b>.<br>
+  Notas em Markdown com links entre notas, grafo, canvas, desenhos, diagramas e sincronização pelo <b>seu próprio repositório Git</b>.<br>
   Windows · Ubuntu/Debian · Linux (AppImage)
 </p>
 
@@ -33,6 +33,7 @@ histórico de versões.
 
 - [Recursos](#recursos)
 - [Instalação](#instalação)
+- [Desenhos e diagramas](#desenhos-e-diagramas)
 - [Primeiros passos](#primeiros-passos)
 - [Sincronização com Git](#sincronização-com-git-padrão)
 - [Sincronização com S3 (alternativa)](#sincronização-com-s3-alternativa)
@@ -72,6 +73,19 @@ histórico de versões.
 - Notas diárias, modelos (`{{title}}`, `{{date}}`, `{{time}}`), favoritos e nota aleatória.
 - Paleta de comandos (`Ctrl+P`), troca rápida (`Ctrl+O`) e atalhos configuráveis.
 - Painéis divididos (direita/abaixo), abas fixas e navegação voltar/avançar.
+
+**Desenhos e diagramas**
+- **Desenho** (`.excalidraw`): o editor do [Excalidraw](https://excalidraw.com) dentro do DocX, com
+  traço "à mão", retângulo, losango, elipse, seta, linha, lápis, texto, imagem, borracha, frames,
+  bibliotecas, cores, preenchimentos, camadas, agrupar/alinhar, desfazer/refazer e exportação para
+  PNG/SVG. O arquivo é o JSON padrão e também abre no excalidraw.com.
+- **Diagrama** (`.drawio.svg`): o editor do [draw.io](https://www.drawio.com) dentro do DocX, no
+  estilo Lucidchart, com bibliotecas de formas (fluxograma, UML, ER, BPMN, rede, AWS, Azure, GCP,
+  Kubernetes…), conectores com roteamento automático, swimlanes, camadas, várias páginas, modelos e
+  guias de alinhamento. O arquivo é um SVG com o diagrama dentro: aparece como imagem nas notas e
+  no GitHub, e continua editável. Arquivos `.drawio` também abrem.
+- Os dois funcionam offline, salvam sozinhos e sincronizam pelo Git como qualquer nota.
+- Na nota, `![[Desenho.excalidraw]]` e `![[Fluxo.drawio.svg]]` mostram a imagem.
 
 **Aparência e saída**
 - Tema escuro, claro ou do sistema, cor de destaque, tamanho de fonte e fontes de texto e código.
@@ -141,6 +155,25 @@ chmod +x DocX-x86_64.AppImage
 Não precisa instalar. Para sincronizar com Git, tenha o `git` instalado (`sudo apt install git`,
 `sudo dnf install git` etc.). Em distribuições sem FUSE, rode com `--appimage-extract-and-run`.
 
+## Desenhos e diagramas
+
+Crie pelo ribbon à esquerda (ícones de caneta e de fluxo), pela paleta (`Ctrl+P` › "Novo desenho" /
+"Novo diagrama") ou com o botão direito numa pasta do explorador.
+
+| | Desenho | Diagrama |
+|---|---|---|
+| Para | Esboços, quadros brancos, mapas mentais, wireframes | Fluxogramas, UML, arquitetura, redes, BPMN, organogramas |
+| Editor | Excalidraw | draw.io (estilo Lucidchart) |
+| Arquivo | `Nome.excalidraw` (JSON) | `Nome.drawio.svg` (SVG editável) |
+| Abre também em | excalidraw.com | app.diagrams.net e draw.io desktop |
+
+Dicas:
+- No desenho, um link `[[Nota]]` num elemento abre a nota. Links da web abrem no navegador.
+- A biblioteca de formas do Excalidraw fica salva no seu computador.
+- No diagrama, "Mais formas" (no fim da barra lateral) liga as bibliotecas de UML, rede, nuvem etc.
+- Os editores rodam isolados e não acessam a internet: bibliotecas online do Excalidraw e
+  integrações de nuvem do draw.io ficam desligadas.
+
 ## Primeiros passos
 
 1. Abra o DocX e vá em **⚙ Configurações › Vault e sincronização**.
@@ -208,6 +241,7 @@ versionamento do bucket).
 | `[[Outra nota#Título]]` / `[[Outra nota#^id]]` | Link para um título / bloco |
 | `![[Outra nota]]` | Conteúdo da outra nota embutido |
 | `![[imagem.png\|300]]` | Imagem com 300 px de largura |
+| `![[Desenho.excalidraw]]` / `![[Fluxo.drawio.svg]]` | Desenho / diagrama como imagem |
 | `#projeto/docx` | Tag (com hierarquia) |
 | `==texto==` | Destaque |
 | `%%oculto%%` | Comentário (não aparece na leitura) |
@@ -273,6 +307,9 @@ tem as configurações copiadas automaticamente na primeira abertura do DocX.
 - O conteúdo das notas é sanitizado antes de ser exibido. Links externos abrem no navegador, e
   arquivos locais só são lidos de dentro do vault.
 - Plugins de terceiros não são suportados, por segurança.
+- O editor de diagramas roda num iframe com origem própria (`docx-drawio://`), sem acesso às notas
+  nem ao app, e conversa com o DocX apenas por mensagens. Desenhos incorporados em notas são
+  mostrados como imagem.
 
 ## Desinstalar
 
@@ -336,3 +373,6 @@ build/        ícones e recursos dos instaladores
 ## Licença
 
 © 2026 Lucas Cardoso Alecrim. Todos os direitos reservados.
+
+O DocX inclui o Excalidraw (MIT) e o draw.io (Apache-2.0), entre outros componentes de código
+aberto. Veja [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

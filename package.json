@@ -2,8 +2,8 @@
   "name": "docx-notes",
   "productName": "DocX",
   "desktopName": "docx.desktop",
-  "version": "1.0.1",
-  "description": "DocX: editor de notas Markdown com links, grafo, canvas e sincronização pelo seu próprio repositório Git",
+  "version": "1.1.0",
+  "description": "DocX: notas Markdown com links, grafo, canvas, desenhos e diagramas, sincronizadas pelo seu próprio repositório Git",
   "author": {
     "name": "Lucas Cardoso Alecrim",
     "email": "lucascardosoalecrim99@gmail.com"
@@ -37,7 +37,8 @@
       "src/shared/**",
       "dist/renderer/**",
       "!dist/renderer/**/*.map",
-      "build/icon.png"
+      "build/icon.png",
+      "THIRD_PARTY_NOTICES.md"
     ],
     "asar": true,
     "npmRebuild": false,
@@ -119,7 +120,9 @@
     "@codemirror/lang-markdown": "^6.3.0",
     "@codemirror/legacy-modes": "^6.5.5",
     "@codemirror/state": "^6.4.0",
+    "@excalidraw/excalidraw": "0.18.1",
     "@replit/codemirror-vim": "^6.4.0",
+    "adm-zip": "0.5.18",
     "codemirror": "^6.0.1",
     "d3-force": "^3.0.0",
     "dompurify": "^3.2.0",
@@ -130,6 +133,8 @@
     "lucide": "^0.460.0",
     "marked": "^15.0.0",
     "marked-footnote": "^1.4.0",
-    "mermaid": "^12.1.0"
+    "mermaid": "^12.1.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   }
 }
