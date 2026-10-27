@@ -1,0 +1,92 @@
+name: Build e release
+
+# Em todo push na main (e manualmente): testa e gera os instaladores como artefatos do workflow.
+# Em uma tag v* (ex.: v1.0.0): além disso, publica uma Release com os instaladores para download.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+            artifact: DocX-Windows
+            files: release/*.exe
+          - os: ubuntu-latest
+            script: dist:linux
+            artifact: DocX-Linux
+            files: |
+              release/*.deb
+              release/*.AppImage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run ${{ matrix.script }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publicar Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > notes.md <<'NOTES'
+          ## Downloads
+
+          | Sistema | Arquivo |
+          |---|---|
+          | Windows 10/11 (64 bits) | `DocX-Setup-*.exe`: assistente de instalação com atalho na Área de Trabalho e no Menu Iniciar |
+          | Ubuntu / Debian (64 bits) | `DocX-*-linux-amd64.deb`: `sudo apt install ./DocX-*-linux-amd64.deb` |
+          | Qualquer Linux (64 bits) | `DocX-*-x86_64.AppImage`: `chmod +x` e execute |
+
+          No Windows, o instalador ainda não tem assinatura digital: se aparecer "O Windows protegeu o
+          computador", clique em **Mais informações › Executar assim mesmo**.
+
+          Para sincronizar com Git, tenha o Git instalado (no Windows, o Git for Windows). Veja o README.
+          NOTES
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --title "DocX ${TAG#v}" --notes-file notes.md

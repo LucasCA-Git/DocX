@@ -72,8 +72,8 @@ histórico de versões.
 
 ## Instalação
 
-Os instaladores ficam na página de releases do projeto (ou na pasta `release/` depois de gerar o
-build, ver [Desenvolvimento](#desenvolvimento)).
+Baixe o instalador na página de **[Releases](https://github.com/LucasCA-Git/Docs/releases/latest)**
+(ou gere localmente, ver [Desenvolvimento](#desenvolvimento)).
 
 | Sistema | Arquivo | Como instalar |
 |---|---|---|
@@ -275,7 +275,21 @@ npm run dist:win     # no Windows  → release/DocX-Setup-<versão>.exe
 npm run dist:linux   # no Linux/WSL → release/DocX-<versão>-linux-amd64.deb e .AppImage
 ```
 
-O empacotamento usa o [electron-builder](https://www.electron.build). O instalador do Windows
+O empacotamento usa o [electron-builder](https://www.electron.build).
+
+**Automático (GitHub Actions):** `.github/workflows/release.yml` roda os testes e gera os três
+instaladores no Windows e no Ubuntu do GitHub a cada push na `main`. Eles ficam como artefatos do
+workflow (aba Actions, por 30 dias). Para publicar uma versão:
+
+```bash
+# atualize "version" no package.json, faça o commit e então:
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+A tag dispara o mesmo build e cria a Release com os instaladores anexados.
+
+**Local:** O instalador do Windows
 (NSIS) precisa ser gerado no Windows, e os pacotes Linux no Linux (o WSL serve). O ícone fica em
 `build/icon.svg`, com as versões PNG em `build/icon.png` e `build/icons/`.
 

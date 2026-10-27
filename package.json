@@ -16,8 +16,8 @@
     "build": "node scripts/build.js",
     "start": "node scripts/build.js && electron .",
     "test": "node --test \"test/**/*.test.js\"",
-    "dist:win": "node scripts/build.js && electron-builder --win nsis --x64",
-    "dist:linux": "node scripts/build.js && electron-builder --linux deb AppImage --x64"
+    "dist:win": "node scripts/build.js && electron-builder --win nsis --x64 --publish never",
+    "dist:linux": "node scripts/build.js && electron-builder --linux deb AppImage --x64 --publish never"
   },
   "engines": {
     "node": ">=20"
