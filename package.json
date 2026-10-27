@@ -1,16 +1,114 @@
 {
-  "name": "docs",
-  "version": "0.1.0",
-  "description": "Editor de notas Markdown com sincronização no seu próprio bucket S3",
+  "name": "docx-notes",
+  "productName": "DocX",
+  "desktopName": "docx.desktop",
+  "version": "1.0.0",
+  "description": "DocX: editor de notas Markdown com links, grafo, canvas e sincronização pelo seu próprio repositório Git",
+  "author": {
+    "name": "Lucas Cardoso Alecrim",
+    "email": "lucascardosoalecrim99@gmail.com"
+  },
+  "homepage": "https://github.com/LucasCA-Git/Docs",
+  "license": "UNLICENSED",
   "private": true,
   "main": "src/main/main.js",
   "scripts": {
     "build": "node scripts/build.js",
     "start": "node scripts/build.js && electron .",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test \"test/**/*.test.js\"",
+    "dist:win": "node scripts/build.js && electron-builder --win nsis --x64",
+    "dist:linux": "node scripts/build.js && electron-builder --linux deb AppImage --x64"
   },
   "engines": {
     "node": ">=20"
+  },
+  "build": {
+    "appId": "io.github.lucasca-git.docx",
+    "productName": "DocX",
+    "copyright": "Copyright © 2026 Lucas Cardoso Alecrim",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "package.json",
+      "src/main/**",
+      "src/preload/**",
+      "src/shared/**",
+      "dist/renderer/**",
+      "!dist/renderer/**/*.map",
+      "build/icon.png"
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "executableName": "DocX"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "DocX",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "displayLanguageSelector": false,
+      "installerLanguages": [
+        "pt_BR"
+      ],
+      "language": "1046",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "deb",
+        "AppImage"
+      ],
+      "icon": "build/icons",
+      "category": "Office",
+      "executableName": "docx",
+      "synopsis": "Notas Markdown com links, grafo e sync Git",
+      "maintainer": "Lucas Cardoso Alecrim <lucascardosoalecrim99@gmail.com>",
+      "desktop": {
+        "entry": {
+          "Name": "DocX",
+          "Comment": "Notas Markdown com links, grafo e sync Git",
+          "StartupWMClass": "DocX",
+          "Keywords": "notas;markdown;wiki;grafo;"
+        }
+      },
+      "syncDesktopName": true
+    },
+    "deb": {
+      "depends": [
+        "git",
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0"
+      ],
+      "priority": "optional"
+    },
+    "appImage": {
+      "artifactName": "${productName}-${version}-x86_64.${ext}"
+    }
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.700.0",
@@ -25,6 +123,7 @@
     "d3-force": "^3.0.0",
     "dompurify": "^3.2.0",
     "electron": "^33.2.0",
+    "electron-builder": "26.17.0",
     "esbuild": "^0.24.0",
     "katex": "^0.19.0",
     "lucide": "^0.460.0",
