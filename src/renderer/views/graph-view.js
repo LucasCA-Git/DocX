@@ -46,7 +46,7 @@ const GROUP_COLORS = ['#e9973f', '#4fb3a9', '#e05d6f', '#5b8def', '#b07de8', '#7
 function loadOptions(key) {
   const defaults = {
     attachments: true, unresolved: false, orphans: true, tags: false, arrows: false, search: '',
-    groups: [], depth: 1, nodeSize: 1, forces: { ...DEFAULT_FORCES }, open: { filters: true, groups: false, display: false, forces: false },
+    groups: [], depth: 1, nodeSize: 1, forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
   };
   try {
     const saved = JSON.parse(localStorage.getItem(key)) ?? {};
@@ -127,8 +127,22 @@ export class GraphView {
 
   // ---------- controls ----------
 
+  // The settings panel closes to a gear button. The global graph remembers it; the local graph
+  // starts closed every time.
+  get panelOpen() {
+    return this.isLocal ? Boolean(this.controlsOpen) : this.options.open.panel !== false;
+  }
+
+  set panelOpen(open) {
+    if (this.isLocal) this.controlsOpen = open;
+    else {
+      this.options.open.panel = open;
+      this.saveOptions();
+    }
+  }
+
   // Filters, color groups, display and forces settings. The local graph
-  // starts collapsed to a gear button and has a depth slider instead of the search box.
+  // has a depth slider instead of the search box.
   renderControls() {
     const save = () => this.saveOptions();
     const toggle = (key, label) => {
@@ -161,10 +175,10 @@ export class GraphView {
       this.worker.postMessage({ type: 'forces', forces: this.options.forces });
     });
 
-    if (this.isLocal && !this.controlsOpen) {
+    if (!this.panelOpen) {
       this.controls.className = 'graph-controls is-collapsed';
-      this.controls.replaceChildren(iconButton('settings', 'Opções do grafo local', () => {
-        this.controlsOpen = true;
+      this.controls.replaceChildren(iconButton('settings', this.isLocal ? 'Opções do grafo local' : 'Opções do grafo', () => {
+        this.panelOpen = true;
         this.renderControls();
       }));
       return;
@@ -196,10 +210,10 @@ export class GraphView {
       el('div', { class: 'graph-controls-row graph-controls-top' },
         this.isLocal ? el('span', { class: 'graph-controls-title', text: 'Grafo local' }) : search,
         iconButton('refresh', 'Centralizar', () => this.fit({ auto: false })),
-        this.isLocal ? iconButton('x', 'Fechar opções', () => {
-          this.controlsOpen = false;
+        iconButton('x', 'Fechar opções', () => {
+          this.panelOpen = false;
           this.renderControls();
-        }) : null),
+        })),
       section('filters', 'Filtros',
         this.isLocal ? slider('Profundidade', this.options.depth, 1, 5, 1, (v) => this.setOption('depth', v)) : null,
         this.isLocal ? search : null,
