@@ -1,6 +1,6 @@
 'use strict';
 
-// Search syntax, like Obsidian's: words are ANDed; "exact phrase"; -word excludes; OR between
+// Search syntax: words are ANDed; "exact phrase"; -word excludes; OR between
 // groups; operators tag:, path:, file:; /regex/flags.
 // parseQuery → [[term, …] (one AND group), …]; term = { kind, value, negate, flags? }.
 

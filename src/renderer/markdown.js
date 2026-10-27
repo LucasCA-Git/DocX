@@ -15,12 +15,12 @@ const escapeHtml = (text) => text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<
 const ALLOWED_URI_REGEXP = /^(?:(?:https?|mailto|tel|vault-asset):|#|(?![/\\.])[^a-z]|[a-z+\-][a-z+.\-]*(?:[^a-z+.\-:/\\]|$))/i;
 let currentResolve = () => null;
 
-// ![[img.png|300]] or |300x200 sets the size, like Obsidian.
+// ![[img.png|300]] or |300x200 sets the size.
 const SIZE_RE = /^(\d+)(?:x(\d+))?$/;
 const AUDIO_RE = /\.(mp3|wav|ogg|m4a|flac)$/i;
 const VIDEO_RE = /\.(mp4|webm|mov|ogv)$/i;
 
-// Obsidian additions on top of GFM: ==highlight==, $math$ / $$math$$ (rendered later by
+// Additions on top of GFM: ==highlight==, $math$ / $$math$$ (rendered later by
 // render-extras.js from data-tex), footnotes.
 const md = new Marked({ gfm: true });
 md.use(markedFootnote({ description: 'Notas de rodapé', footnoteDivider: true }));

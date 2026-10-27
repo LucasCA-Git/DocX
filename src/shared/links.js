@@ -3,7 +3,7 @@
 const { noteMetadata } = require('./metadata');
 
 // Wikilinks ([[nota]], [[nota|apelido]], [[nota#título]]) and embeds (![[arquivo]]), resolved the
-// way Obsidian does. Pure: shared by the renderer (bundled) and the tests (node --test).
+// way wiki-link editors do. Pure: shared by the renderer (bundled) and the tests (node --test).
 
 const LINK_RE = /(!?)\[\[([^[\]\n]+?)\]\]/g;
 const FENCE_OPEN_RE = /^ {0,3}(`{3,}(?=[^`]*$)|~{3,})/;

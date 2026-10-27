@@ -1,6 +1,6 @@
 import { $, el, icon, errorText } from './dom';
 
-// Toasts in the top-right corner, like Obsidian's notices.
+// Toasts (notices) in the top-right corner.
 export function notice(message, { error = false, timeout = 6000 } = {}) {
   const node = el('div', { class: `notice${error ? ' is-error' : ''}`, text: errorText(message) });
   node.addEventListener('click', () => node.remove());

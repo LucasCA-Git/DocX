@@ -10,7 +10,7 @@ const sample = JSON.stringify({
   nodes: [
     { id: 'a', type: 'text', x: 0, y: 0, width: 200, height: 100, text: '# Oi', color: '1' },
     { id: 'b', type: 'file', x: 300, y: 0, width: 200, height: 100, file: 'Notas/x.md', subpath: '#Sec' },
-    { id: 'c', type: 'link', x: 0, y: 200, width: 200, height: 100, url: 'https://obsidian.md' },
+    { id: 'c', type: 'link', x: 0, y: 200, width: 200, height: 100, url: 'https://example.com' },
     { id: 'g', type: 'group', x: -20, y: -20, width: 600, height: 160, label: 'Grupo' },
     { id: 'bad', type: 'iframe', x: 0, y: 0, width: 10, height: 10 },
     { id: 'nan', type: 'text', x: 'x', y: 0, width: 10, height: 10, text: '' },

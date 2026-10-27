@@ -1,6 +1,6 @@
 'use strict';
 
-// Obsidian's Markdown additions for the Lezer parser (editor and Live Preview):
+// Markdown additions for the Lezer parser (editor and Live Preview):
 // ==highlight==, %%comment%% and $inline math$.
 
 const { tags } = require('@lezer/highlight');
@@ -84,6 +84,6 @@ const InlineMath = {
   }],
 };
 
-const ObsidianMarkdown = [Highlight, Comment, InlineMath];
+const ExtendedMarkdown = [Highlight, Comment, InlineMath];
 
-module.exports = { Highlight, Comment, InlineMath, ObsidianMarkdown };
+module.exports = { Highlight, Comment, InlineMath, ExtendedMarkdown };

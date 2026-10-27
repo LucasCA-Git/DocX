@@ -13,6 +13,7 @@ const { resolveAsset, assetHeaders, parseRange } = require('./asset-protocol');
 const { createReadStream } = require('node:fs');
 const { Readable } = require('node:stream');
 const { ASSET_SCHEME } = require('../shared/asset-url');
+const { migrateUserData } = require('./migrate');
 
 const os = require('node:os');
 
@@ -308,9 +309,11 @@ function createWindow() {
     height: 800,
     minWidth: 640,
     minHeight: 400,
-    title: 'Docs',
+    title: 'DocX',
+    // Windows takes the icon from the .exe; Linux needs it on the window (dock and Alt+Tab).
+    ...(process.platform === 'linux' ? { icon: path.join(__dirname, '..', '..', 'build', 'icon.png') } : {}),
     backgroundColor: '#1e1e1e',
-    // Tabs live in the title bar, like Obsidian; the OS keeps drawing min/max/close.
+    // Tabs live in the title bar; the OS keeps drawing min/max/close.
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#262626', symbolColor: '#dadada', height: 40 },
     webPreferences: {
@@ -360,6 +363,12 @@ function registerAssetProtocol() {
       headers: { ...headers, 'Content-Length': String(end - start + 1), ...(range ? { 'Content-Range': `bytes ${start}-${end}/${size}` } : {}) },
     });
   });
+}
+
+try {
+  migrateUserData(path.join(app.getPath('appData'), 'docs'), app.getPath('userData'));
+} catch (err) {
+  console.error('Falha ao migrar as configurações antigas:', err);
 }
 
 app.whenReady().then(async () => {

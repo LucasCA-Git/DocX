@@ -3,7 +3,7 @@ import { prefs, PREF_SECTIONS } from './prefs';
 
 const api = window.docs;
 
-// Settings modal like Obsidian's: tabs on the left. "Vault e sincronização" saves to the main
+// Settings modal with tabs on the left. "Vault e sincronização" saves to the main
 // process (it reopens the vault); the other tabs are preferences applied at once.
 // extraSections: [{ id, title, render(container) }] added by other modules (hotkeys…).
 export function setupSettings({ beforeSave, onSaved, extraSections = [] }) {
@@ -96,7 +96,7 @@ export function setupSettings({ beforeSave, onSaved, extraSections = [] }) {
     sync();
     const error = el('p', { class: 'error', hidden: true });
     const form = el('form', { class: 'settings-form' },
-      settingRow('Pasta das notas', 'Uma pasta comum no seu computador; também abre no Obsidian.',
+      settingRow('Pasta das notas', 'Uma pasta comum no seu computador; abre em qualquer editor Markdown.',
         el('span', { class: 'row' }, vaultPath, el('button', {
           type: 'button',
           text: 'Escolher…',

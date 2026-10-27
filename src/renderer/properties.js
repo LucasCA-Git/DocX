@@ -3,7 +3,7 @@ import { parseLinks } from '../shared/links';
 
 const URL_RE = /^https?:\/\/\S+$/;
 
-// Front matter as Obsidian's "Propriedades" table: lists as chips, tags clickable, [[links]] and
+// Front matter as a "Propriedades" table: lists as chips, tags clickable, [[links]] and
 // URLs as links. Read-only here; the YAML itself is edited as text.
 // handlers: { onTag(tag), onLink(href, event), resolve(target) }
 export function renderProperties(data, { onTag, onLink, resolve }) {

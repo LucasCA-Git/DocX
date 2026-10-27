@@ -1,7 +1,7 @@
 import { forceSimulation, forceLink, forceManyBody, forceX, forceY, forceCollide } from 'd3-force';
 import { placeNewNodes, nodeRadius } from '../shared/graph-model';
 
-// Force simulation off the UI thread, like Obsidian's sim.js. Receives the graph, sends node
+// Force simulation off the UI thread. Receives the graph, sends node
 // positions as a Float32Array [x0, y0, x1, y1, …] in the order the nodes were given.
 //
 // in:  { type: 'graph', gen, nodes: [{ id, degree }], links: [{ source, target }] }

@@ -6,7 +6,7 @@ const SHOW_DELAY_MS = 350;
 const HIDE_DELAY_MS = 300;
 const NOTE_RE = /\.(md|markdown|txt)$/i;
 
-// Page preview: hovering an internal link shows the note in a popover, like Obsidian. In the
+// Page preview: hovering an internal link shows the note in a popover. In the
 // reading view (and inside previews/embeds) plain hover is enough; in the editor Ctrl must be held,
 // so moving the mouse while writing does not pop things up.
 export function setupHoverPreview({ store, workspace }) {

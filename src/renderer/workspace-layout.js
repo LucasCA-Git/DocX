@@ -1,6 +1,6 @@
 import { el, icon } from './dom';
 
-// A group of tabs with the view of the active one (an Obsidian "tab group"). The workspace holds
+// A group of tabs with the view of the active one (a "tab group"). The workspace holds
 // a tree of these: split = { type: 'split', dir: 'row'|'column', children: [node], sizes: [n] }.
 export class Pane {
   constructor(workspace) {

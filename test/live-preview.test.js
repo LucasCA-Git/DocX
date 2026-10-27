@@ -6,9 +6,9 @@ const { parser, GFM } = require('@lezer/markdown');
 
 const { livePreview } = require('../src/shared/live-preview');
 
-const { ObsidianMarkdown } = require('../src/shared/md-extensions');
+const { ExtendedMarkdown } = require('../src/shared/md-extensions');
 
-const md = parser.configure([GFM, ObsidianMarkdown]);
+const md = parser.configure([GFM, ExtendedMarkdown]);
 
 // Items for `text` with the cursor on the lines that contain `activeAt` offsets.
 function run(text, activeAt = []) {

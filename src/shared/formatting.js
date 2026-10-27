@@ -108,7 +108,7 @@ function linePrefix(doc, from, to, kind) {
   });
 }
 
-// Ctrl+L like Obsidian: plain text → "- [ ] ", list item → task, [ ] ↔ [x].
+// Ctrl+L: plain text → "- [ ] ", list item → task, [ ] ↔ [x].
 function cycleTask(doc, from, to) {
   return rewriteLines(doc, from, to, (line) => {
     const task = line.match(/^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\]\s*)/);

@@ -19,7 +19,7 @@ import { fillEmbeds, noteEmbed } from '../embeds';
 import { enhanceRendered } from '../render-extras';
 import { toggleTask } from '../../shared/markdown-extras';
 import { codeLanguages } from '../languages';
-import { ObsidianMarkdown } from '../../shared/md-extensions';
+import { ExtendedMarkdown } from '../../shared/md-extensions';
 import { propertiesField, blocksField } from '../lp-blocks';
 import { renderProperties } from '../properties';
 import { parseFrontMatter } from '../../shared/metadata';
@@ -61,7 +61,7 @@ const wikilinkMarks = ViewPlugin.fromClass(class {
 }, { decorations: (plugin) => plugin.decorations });
 
 // One tab showing a file: header (back/forward, breadcrumb, actions) and either the editor or the
-// reading view. Keeps its own history, like an Obsidian leaf.
+// reading view. Keeps its own history (a workspace leaf).
 export class NoteView {
   constructor({ workspace, store, path }) {
     this.workspace = workspace;
@@ -162,7 +162,7 @@ export class NoteView {
       selection: { anchor: Math.min(start, doc.length) },
       extensions: [
         editorExtensions(),
-        markdown({ base: markdownLanguage, codeLanguages, extensions: ObsidianMarkdown }),
+        markdown({ base: markdownLanguage, codeLanguages, extensions: ExtendedMarkdown }),
         markdownHighlight,
         this.lpCompartment.of(this.livePreviewExtensions()),
         EditorView.lineWrapping,

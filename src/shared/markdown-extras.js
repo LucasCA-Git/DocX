@@ -1,6 +1,6 @@
 'use strict';
 
-// Text-level helpers for Obsidian Markdown features: checklists, %%comments%% and the blocks the
+// Text-level helpers for extended Markdown features: checklists, %%comments%% and the blocks the
 // Live Preview renders as a whole (tables, $$ math, mermaid diagrams).
 
 const { maskFences } = require('./links');

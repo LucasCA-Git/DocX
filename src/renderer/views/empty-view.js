@@ -1,7 +1,7 @@
 import { el } from '../dom';
 import { renderDocStats } from '../status';
 
-// "Nova aba": what Obsidian shows when no file is open in a tab.
+// "Nova aba": what a tab shows when no file is open in it.
 export class EmptyView {
   constructor({ workspace }) {
     const action = (text, onclick) => el('button', { class: 'empty-state-action', text, onclick });

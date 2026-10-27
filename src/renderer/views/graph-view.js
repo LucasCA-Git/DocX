@@ -127,7 +127,7 @@ export class GraphView {
 
   // ---------- controls ----------
 
-  // Filters, color groups, display and forces, like Obsidian's graph settings. The local graph
+  // Filters, color groups, display and forces settings. The local graph
   // starts collapsed to a gear button and has a depth slider instead of the search box.
   renderControls() {
     const save = () => this.saveOptions();

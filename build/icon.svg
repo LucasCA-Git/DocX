@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b6cf0"/>
+      <stop offset="1" stop-color="#4a2fb8"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e9e4fb"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+  <path d="M300 200 H600 L740 340 V780 a44 44 0 0 1 -44 44 H300 a44 44 0 0 1 -44 -44 V244 a44 44 0 0 1 44 -44 Z" fill="url(#page)"/>
+  <path d="M600 200 V296 a44 44 0 0 0 44 44 H740 Z" fill="#c9bdf5"/>
+  <g stroke="#5b3fd0" stroke-width="22" stroke-linecap="round">
+    <line x1="380" y1="440" x2="620" y2="680"/>
+    <line x1="620" y1="440" x2="380" y2="680"/>
+  </g>
+  <g fill="#5b3fd0">
+    <circle cx="380" cy="440" r="44"/>
+    <circle cx="620" cy="440" r="44"/>
+    <circle cx="380" cy="680" r="44"/>
+    <circle cx="620" cy="680" r="44"/>
+  </g>
+  <circle cx="500" cy="560" r="62" fill="#8b6cf0" stroke="#ffffff" stroke-width="18"/>
+</svg>

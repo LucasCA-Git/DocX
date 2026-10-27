@@ -96,7 +96,7 @@ export class Explorer {
     this.render();
   }
 
-  // Opening a file expands its folders, like Obsidian's "reveal active file".
+  // Opening a file expands its folders ("reveal active file").
   reveal(rel) {
     const parts = dirName(rel).split('/').filter(Boolean);
     let changed = false;

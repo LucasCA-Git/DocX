@@ -1,6 +1,6 @@
 'use strict';
 
-// Fuzzy matching for the quick switcher and the command palette, like Obsidian's: the query's
+// Fuzzy matching for the quick switcher and the command palette: the query's
 // characters must appear in order; word starts and consecutive characters score higher. Spaces
 // split the query into terms that may match in any order. Case and accents are ignored.
 

@@ -18,7 +18,7 @@ test('listTree returns files and folders, including empty folders', async () => 
   await vault.write('Deploy/Front.md', 'a');
   await vault.write('Nota.md', 'b');
   await fs.mkdir(path.join(vault.root, 'Vazia'));
-  await fs.mkdir(path.join(vault.root, '.obsidian'));
+  await fs.mkdir(path.join(vault.root, '.config'));
   assert.deepEqual(await vault.listTree(), { files: ['Deploy/Front.md', 'Nota.md'], folders: ['Deploy', 'Vazia'] });
 });
 

@@ -37,7 +37,7 @@ setupHoverPreview({ store, workspace });
 setupAppearance();
 workspace.addEventListener('change', () => explorer.render());
 
-const vaultName = (cfg) => cfg.vaultPath.split(/[\\/]/).filter(Boolean).pop() || 'Docs';
+const vaultName = (cfg) => cfg.vaultPath.split(/[\\/]/).filter(Boolean).pop() || 'DocX';
 
 const openSettings = setupSettings({
   extraSections: [hotkeysSection],

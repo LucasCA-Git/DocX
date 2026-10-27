@@ -211,7 +211,7 @@ test('uses a local identity when git has none configured', async () => {
   const a = await machine(remote);
   await a.write('nota.md', 'x');
   await a.sync.syncAll();
-  assert.match(git(remote, 'log', '-1', '--format=%an <%ae>'), /^Docs <docs@teste>\n$/);
+  assert.match(git(remote, 'log', '-1', '--format=%an <%ae>'), /^DocX <docx@teste>\n$/);
 });
 
 test('keeps line endings byte for byte', async () => {
@@ -312,7 +312,7 @@ test('lists the versions of a note, following renames, and reads an old one', as
   assert.equal(versions.length, 3);
   assert.deepEqual(versions.map((v) => v.path), ['pasta/Final [ok].md', 'rascunho.md', 'rascunho.md']);
   assert.match(versions[0].subject, /^vault: /);
-  assert.equal(versions[0].author, 'Docs');
+  assert.equal(versions[0].author, 'DocX');
   assert.ok(versions[0].at > Date.now() - 60_000);
   assert.equal((await a.sync.showFile(versions[2].sha, versions[2].path)).toString(), `${body}v1`);
   assert.equal((await a.sync.showFile(versions[1].sha, versions[1].path)).toString(), `${body}v2`);

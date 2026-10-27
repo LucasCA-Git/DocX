@@ -17,10 +17,10 @@ const MAX_OUTPUT_BYTES = 256 * 1024 * 1024;
 const AUTH_BACKOFF_MS = 10 * 60_000;
 
 // Mirrors vault.isIgnored: dotfiles/dot-folders (.trash, .docs-sync, temp files) and node_modules.
-const EXCLUDE = ['# Docs: nunca versionar', '.*', 'node_modules/', ''].join('\n');
+const EXCLUDE = ['# DocX: nunca versionar', '.*', 'node_modules/', ''].join('\n');
 // Highest-precedence attributes: no clean/smudge filter from an in-tree .gitattributes ever runs,
 // and content is stored byte for byte.
-const ATTRIBUTES = ['# Docs', '* -filter -text', ''].join('\n');
+const ATTRIBUTES = ['# DocX', '* -filter -text', ''].join('\n');
 
 // Repo-local config keys the app accepts. Anything else in a pre-existing .git/config (fsmonitor,
 // sshCommand, credential helpers, filters, aliases, include, insteadOf…) could run a program or
@@ -322,7 +322,7 @@ class GitSync extends EventEmitter {
     const { code, stdout } = await this.run(['remote', 'get-url', 'origin'], { okCodes: [0, 2] });
     if (code !== 0) await this.run(['remote', 'add', 'origin', '--', this.url]);
     else if (stdout.toString().trim() !== this.url) await this.run(['remote', 'set-url', 'origin', '--', this.url]);
-    for (const [key, value] of [['user.name', 'Docs'], ['user.email', `docs@${this.hostname}`]]) {
+    for (const [key, value] of [['user.name', 'DocX'], ['user.email', `docx@${this.hostname}`]]) {
       const res = await this.run(['config', '--get', key], { okCodes: [0, 1] });
       if (res.code !== 0) await this.run(['config', key, value]);
     }

@@ -29,7 +29,7 @@ const svg = (tag, attrs = {}) => {
 };
 
 // A .canvas file: cards (text, note, link, group) on an infinite board joined by arrows, like
-// Obsidian Canvas. Drag the background to pan, Ctrl+scroll to zoom, double-click to add a card,
+// Canvas (JSON Canvas). Drag the background to pan, Ctrl+scroll to zoom, double-click to add a card,
 // drag a card's side dot onto another card to connect them.
 export class CanvasView {
   constructor({ workspace, store, path }) {

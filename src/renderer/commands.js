@@ -64,7 +64,7 @@ export class Commands extends EventTarget {
   }
 
   // Global keydown, in the capture phase: app hotkeys win over the editor's own bindings (CodeMirror
-  // binds Ctrl+G, Ctrl+I…), like in Obsidian; keys without an app command still reach the editor.
+  // binds Ctrl+G, Ctrl+I…); keys without an app command still reach the editor.
   // While a modal is open (palette, settings, dialogs) only it handles keys.
   handleKeydown(event) {
     if (event.defaultPrevented || event.isComposing || document.querySelector('dialog[open]')) return;

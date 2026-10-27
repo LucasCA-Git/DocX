@@ -2,7 +2,7 @@ import { el } from './dom';
 
 const MAX_ITEMS = 100;
 
-// Text box + list chosen with the keyboard, like Obsidian's quick switcher and command palette.
+// Text box + list chosen with the keyboard: the quick switcher and the command palette.
 // getItems(query) -> [{ ...anything }], render(item) -> Node, choose(item, event) (event has
 // ctrlKey/shiftKey for "new tab"/"create"), instructions: [[keys, text]] shown at the bottom.
 export function openSuggest({ placeholder, getItems, render, choose, instructions = [], empty = 'Nada encontrado.' }) {

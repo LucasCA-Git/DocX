@@ -1,6 +1,6 @@
 'use strict';
 
-// Dates in moment.js-style formats (what Obsidian's daily notes and templates use) and the
+// Dates in moment.js-style formats (the usual daily-note and template syntax) and the
 // {{title}} / {{date}} / {{time}} template variables.
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];

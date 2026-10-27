@@ -1,6 +1,6 @@
 'use strict';
 
-// JSON Canvas (https://jsoncanvas.org), the .canvas format of Obsidian: nodes (text, file, link,
+// JSON Canvas (https://jsoncanvas.org), the open .canvas format: nodes (text, file, link,
 // group) on an infinite board and edges between them. Unknown top-level fields are kept.
 
 const NODE_TYPES = new Set(['text', 'file', 'link', 'group']);
@@ -57,7 +57,7 @@ function parseCanvas(text) {
   return { ...data, nodes, edges };
 }
 
-// Groups first so they are drawn behind the cards (Obsidian does the same).
+// Groups first so they are drawn behind the cards.
 function serializeCanvas(canvas) {
   const nodes = [...canvas.nodes.filter((n) => n.type === 'group'), ...canvas.nodes.filter((n) => n.type !== 'group')];
   return JSON.stringify({ ...canvas, nodes, edges: canvas.edges }, null, '\t');

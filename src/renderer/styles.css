@@ -1,4 +1,4 @@
-/* Obsidian-like dark theme. */
+/* DocX theme (dark by default). */
 :root {
   --background-primary: #1e1e1e;
   --background-secondary: #262626;
@@ -664,7 +664,7 @@ details.callout > summary::-webkit-details-marker { display: none; }
 [data-callout="quote"], .lp-callout-quote { --callout: 158 158 158; }
 .editor-host .cm-line.lp-callout { background: rgb(var(--callout, 68 138 255) / 0.1); border-left: 3px solid rgb(var(--callout, 68 138 255)); padding-left: 14px; }
 .editor-host .cm-line.lp-callout-title { font-weight: 600; color: rgb(var(--callout, 68 138 255)); }
-/* Fold arrows sit in the left margin (like Obsidian), so the text lines up with the title. */
+/* Fold arrows sit in the left margin, so the text lines up with the title. */
 .editor-host .cm-foldGutter { width: 22px; }
 body:not(.show-line-numbers).fold-gutter .editor-host .cm-editor { margin-left: -22px; }
 

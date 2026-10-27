@@ -5,7 +5,7 @@ import { GraphView } from './views/graph-view';
 const STORAGE_KEY = 'docs.rightSidebar';
 const UPDATE_DELAY_MS = 200;
 
-// Right sidebar, like Obsidian's: panes about the last active note (backlinks, outgoing links,
+// Right sidebar: panes about the last active note (backlinks, outgoing links,
 // outline, local graph) and the vault's tags. Extra panes (bookmarks…) come in through addPane.
 export class RightSidebar {
   constructor({ workspace, store, rootEl }) {
