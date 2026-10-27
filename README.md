@@ -354,8 +354,8 @@ git push origin v1.0.1
 A tag dispara o mesmo build e cria a Release com os instaladores anexados.
 
 **Local:** O instalador do Windows
-(NSIS) precisa ser gerado no Windows, e os pacotes Linux no Linux (o WSL serve). O ícone fica em
-`build/icon.svg`, com as versões PNG em `build/icon.png` e `build/icons/`.
+(NSIS) precisa ser gerado no Windows, e os pacotes Linux no Linux (o WSL serve). O ícone original fica
+em `build/icon-source.png`, com as versões recortadas em `build/icon.png` e `build/icons/`.
 
 ### Estrutura
 
