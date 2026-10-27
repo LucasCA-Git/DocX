@@ -14,6 +14,7 @@ const { createReadStream } = require('node:fs');
 const { Readable } = require('node:stream');
 const { ASSET_SCHEME } = require('../shared/asset-url');
 const { migrateUserData } = require('./migrate');
+const { DRAWIO_SCHEME, DRAWIO_ORIGIN, resolveDrawioFile, drawioHeaders } = require('./drawio-protocol');
 
 const os = require('node:os');
 
@@ -131,7 +132,8 @@ function requireString(value, name) {
 // Only our own window may call the API.
 function handle(channel, fn) {
   ipcMain.handle(channel, (event, ...args) => {
-    if (!win || event.sender !== win.webContents) throw new Error('Origem não autorizada');
+    // The window's own page only: never a frame inside it (the diagram editor).
+    if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) throw new Error('Origem não autorizada');
     return fn(...args);
   });
 }
@@ -331,6 +333,10 @@ function createWindow() {
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (event) => event.preventDefault());
+  // Frames (the diagram editor) never leave their own origin.
+  win.webContents.on('will-frame-navigate', (event) => {
+    if (!event.isMainFrame && !event.url.startsWith(`${DRAWIO_ORIGIN}/`)) event.preventDefault();
+  });
   win.loadFile(path.join(__dirname, '..', '..', 'dist', 'renderer', 'index.html'));
   win.on('close', (event) => {
     if (closeReady) return;
@@ -345,7 +351,29 @@ function createWindow() {
 
 // Images embedded in notes (![[x.png]]) load from vault-asset://local/<path>; only images inside
 // the open vault are served, everything else is a 404.
-protocol.registerSchemesAsPrivileged([{ scheme: ASSET_SCHEME, privileges: { standard: true, secure: true } }]);
+protocol.registerSchemesAsPrivileged([
+  { scheme: ASSET_SCHEME, privileges: { standard: true, secure: true } },
+  { scheme: DRAWIO_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } },
+]);
+
+// Web permissions (camera, location, notifications…) are refused. Copying to the clipboard is the
+// only one the editors use; reading it is left to the app's own page.
+function restrictPermissions() {
+  const allowed = (permission, url) => (permission === 'clipboard-sanitized-write' && /^(file:|docx-drawio:)/.test(url ?? ''))
+    || (permission === 'clipboard-read' && (url ?? '').startsWith('file:'));
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => callback(allowed(permission, details.requestingUrl)));
+  session.defaultSession.setPermissionCheckHandler((_wc, permission, origin, details) => allowed(permission, details.requestingUrl ?? origin));
+}
+
+// The diagram editor's files (see drawio-protocol.js): read-only, from the app's own folder.
+function registerDrawioProtocol() {
+  const root = path.join(__dirname, '..', '..', 'dist', 'renderer', 'vendor', 'drawio');
+  protocol.handle(DRAWIO_SCHEME, async (request) => {
+    const full = await resolveDrawioFile(root, request.url);
+    if (!full) return new Response('Not found', { status: 404 });
+    return new Response(await fs.readFile(full), { headers: drawioHeaders(full) });
+  });
+}
 
 function registerAssetProtocol() {
   protocol.handle(ASSET_SCHEME, async (request) => {
@@ -373,6 +401,8 @@ try {
 
 app.whenReady().then(async () => {
   registerAssetProtocol();
+  registerDrawioProtocol();
+  restrictPermissions();
   try {
     session.defaultSession.setSpellCheckerLanguages(['pt-BR', 'en-US']);
   } catch {

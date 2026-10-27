@@ -3,6 +3,8 @@ import { NoteView } from './views/note-view';
 import { GraphView } from './views/graph-view';
 import { EmptyView } from './views/empty-view';
 import { CanvasView } from './views/canvas-view';
+import { ExcalidrawView } from './views/excalidraw-view';
+import { DrawioView } from './views/drawio-view';
 import { renameInCanvas } from '../shared/canvas';
 import { confirmDialog, notice } from './status';
 import { newNotePath, linkTextFor } from '../shared/link-suggest';
@@ -16,6 +18,15 @@ const api = window.docs;
 const STORAGE_KEY = 'docs.workspace';
 const RECENT_KEY = 'docs.recent';
 const MAX_RECENT = 50;
+
+// Files that open in an editor of their own instead of the note view.
+const FILE_VIEWS = [
+  { type: 'canvas', test: /\.canvas$/i, View: CanvasView },
+  { type: 'excalidraw', test: /\.excalidraw$/i, View: ExcalidrawView },
+  { type: 'drawio', test: /\.drawio(\.svg)?$/i, View: DrawioView },
+];
+const FILE_VIEW_TYPES = new Set(['note', ...FILE_VIEWS.map((v) => v.type)]);
+const fileViewFor = (path) => FILE_VIEWS.find((v) => v.test.test(path));
 
 // Tab groups (panes, splittable) with the view of each active tab; also the place every file
 // operation goes through, so open tabs follow renames and deletions.
@@ -307,13 +318,14 @@ export class Workspace extends EventTarget {
   }
 
   openFileView(path, { newTab }) {
-    const existing = this.views.find((v) => (v.type === 'note' || v.type === 'canvas') && v.path === path);
+    const existing = this.views.find((v) => FILE_VIEW_TYPES.has(v.type) && v.path === path);
     if (existing) {
       this.activate(existing);
       return existing;
     }
-    if (/\.canvas$/i.test(path)) {
-      const view = new CanvasView({ workspace: this, store: this.store, path });
+    const special = fileViewFor(path);
+    if (special) {
+      const view = new special.View({ workspace: this, store: this.store, path });
       const empty = !newTab && this.active?.type === 'empty' ? this.active : null;
       this.add(view);
       if (empty) this.closeView(empty);
@@ -441,10 +453,25 @@ export class Workspace extends EventTarget {
   }
 
   async createCanvas(folder = prefs.get('newNoteFolder')) {
-    const rel = uniquePath(folder, 'Sem título', '.canvas', this.store.files);
+    await this.createFile(folder, 'Sem título', '.canvas', '{\n\t"nodes":[],\n\t"edges":[]\n}');
+  }
+
+  // A blank Excalidraw drawing (the standard .excalidraw JSON).
+  async createDrawing(folder = prefs.get('newNoteFolder')) {
+    const scene = { type: 'excalidraw', version: 2, source: 'DocX', elements: [], appState: { gridSize: null, viewBackgroundColor: '#ffffff' }, files: {} };
+    await this.createFile(folder, 'Desenho', '.excalidraw', `${JSON.stringify(scene, null, 2)}\n`);
+  }
+
+  // A blank diagram as an editable SVG (draw.io fills it on the first save).
+  async createDiagram(folder = prefs.get('newNoteFolder')) {
+    await this.createFile(folder, 'Diagrama', '.drawio.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="1px" height="1px" viewBox="0 0 1 1" content=""></svg>');
+  }
+
+  async createFile(folder, base, ext, content) {
+    const rel = uniquePath(folder, base, ext, this.store.files);
     try {
       await api.create(rel);
-      await api.write(rel, '{\n\t"nodes":[],\n\t"edges":[]\n}');
+      await api.write(rel, content);
       await this.store.refresh();
       this.openFile(rel);
     } catch (err) {
@@ -562,7 +589,7 @@ export class Workspace extends EventTarget {
   // Files changed on disk (sync, other editor): reload clean views, close views of deleted files.
   async vaultChanged() {
     for (const view of [...this.views]) {
-      if ((view.type !== 'note' && view.type !== 'canvas') || !view.path) continue;
+      if (!FILE_VIEW_TYPES.has(view.type) || !view.path) continue;
       if (!this.store.has(view.path) && !view.dirty) this.closeView(view);
       else view.reloadIfClean().catch(() => {});
     }
@@ -597,7 +624,10 @@ export class Workspace extends EventTarget {
     let view = null;
     if (saved?.type === 'graph') view = new GraphView({ workspace: this, store: this.store });
     else if (saved?.type === 'note' && saved.path && this.store.has(saved.path)) view = new NoteView({ workspace: this, store: this.store, path: saved.path });
-    else if (saved?.type === 'canvas' && saved.path && this.store.has(saved.path)) view = new CanvasView({ workspace: this, store: this.store, path: saved.path });
+    else if (saved?.path && this.store.has(saved.path)) {
+      const special = FILE_VIEWS.find((v) => v.type === saved.type && v.test.test(saved.path));
+      if (special) view = new special.View({ workspace: this, store: this.store, path: saved.path });
+    }
     if (view) view.pinned = Boolean(saved.pinned);
     return view;
   }

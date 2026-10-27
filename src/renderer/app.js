@@ -78,6 +78,8 @@ const syncNow = () => api.syncNow().catch((err) => notice(err, { error: true }))
   { id: 'file:new', name: 'Nova nota', hotkeys: ['Mod+N'], run: () => workspace.createNote() },
   { id: 'file:new-folder', name: 'Nova pasta', run: () => explorer.newFolder() },
   { id: 'canvas:new', name: 'Novo canvas', run: () => workspace.createCanvas() },
+  { id: 'drawing:new', name: 'Novo desenho (estilo Excalidraw)', run: () => workspace.createDrawing() },
+  { id: 'diagram:new', name: 'Novo diagrama (fluxograma, UML, rede…)', run: () => workspace.createDiagram() },
   { id: 'file:rename', name: 'Renomear nota', hotkeys: ['F2'], check: noteView, run: () => noteView().focusTitle() },
   { id: 'file:delete', name: 'Excluir nota', check: noteView, run: () => workspace.deletePath(noteView().path) },
   { id: 'editor:save', name: 'Salvar nota', hotkeys: ['Mod+S'], check: textView, run: () => textView().save() },
@@ -151,6 +153,8 @@ $('#ribbon-actions').append(
   iconButton('calendar', 'Abrir nota diária de hoje (Alt+D)', run('daily:today')),
   iconButton('dices', 'Abrir nota aleatória', run('note:random')),
   iconButton('canvas', 'Novo canvas', run('canvas:new')),
+  iconButton('pen-tool', 'Novo desenho', run('drawing:new')),
+  iconButton('workflow', 'Novo diagrama', run('diagram:new')),
   iconButton('terminal', 'Abrir paleta de comandos (Ctrl+P)', run('app:command-palette')),
   iconButton('refresh', 'Sincronizar agora', syncNow),
 );

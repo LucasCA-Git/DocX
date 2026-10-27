@@ -284,6 +284,8 @@ export class Explorer {
       { label: 'Nova nota', icon: 'file-plus', action: () => this.workspace.createNote(rel) },
       { label: 'Nova pasta', icon: 'folder-plus', action: () => this.newFolder(rel) },
       { label: 'Novo canvas', icon: 'canvas', action: () => this.workspace.createCanvas(rel) },
+      { label: 'Novo desenho', icon: 'pen-tool', action: () => this.workspace.createDrawing(rel) },
+      { label: 'Novo diagrama', icon: 'workflow', action: () => this.workspace.createDiagram(rel) },
       ...(rel ? ['-',
         { label: 'Renomear', icon: 'pencil', action: () => this.startRename(rel) },
         { label: 'Mover para…', icon: 'folder-input', action: () => this.moveTo(rel) },

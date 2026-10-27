@@ -2,6 +2,8 @@ import { el, icon, displayName } from './dom';
 import { renderMarkdown } from './markdown';
 import { sectionText } from '../shared/metadata';
 import { enhanceRendered } from './render-extras';
+import { loadExcalidraw } from './views/excalidraw-view';
+import { isLightTheme } from './appearance';
 
 const MAX_DEPTH = 3;
 
@@ -46,11 +48,28 @@ export function noteEmbed(path, subpath, ctx) {
   return box;
 }
 
+// ![[desenho.excalidraw]]: the drawing as a picture (an <img> of its SVG export, so nothing in it
+// runs inside the note); the title bar opens it in the editor.
+function drawingEmbed(path, ctx) {
+  const body = el('div', { class: 'drawing-embed-body', text: 'Carregando desenho…' });
+  const box = el('div', { class: 'markdown-embed drawing-embed' },
+    el('div', {
+      class: 'markdown-embed-title',
+      onclick: (event) => ctx.workspace.openFile(path, { newTab: event.ctrlKey || event.metaKey }),
+    }, icon('pen-tool', 14), el('span', { text: displayName(path).replace(/\.excalidraw$/i, '') }), icon('arrow-up-right', 14)),
+    body);
+  Promise.all([window.docs.read(path), loadExcalidraw()])
+    .then(([text, lib]) => lib.renderSvg(text, { dark: !isLightTheme() }))
+    .then((svg) => body.replaceChildren(el('img', { src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, alt: displayName(path) })))
+    .catch(() => body.replaceChildren(el('p', { class: 'embed-missing', text: 'Não foi possível mostrar o desenho.' })));
+  return box;
+}
+
 // Replaces the placeholders renderMarkdown leaves for note embeds.
 export function fillEmbeds(root, ctx) {
   for (const holder of root.querySelectorAll('.markdown-embed-placeholder')) {
     if (holder.closest('.markdown-embed-content') !== root.closest('.markdown-embed-content')) continue;
-    const { embedPath, embedSub } = holder.dataset;
-    holder.replaceWith(noteEmbed(embedPath, embedSub || null, ctx));
+    const { embedPath, embedSub, embedKind } = holder.dataset;
+    holder.replaceWith(embedKind === 'drawing' ? drawingEmbed(embedPath, ctx) : noteEmbed(embedPath, embedSub || null, ctx));
   }
 }

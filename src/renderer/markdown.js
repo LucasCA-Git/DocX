@@ -92,6 +92,10 @@ function renderEmbed(link, resolved) {
     // Filled in by embeds.js (it needs the store and the workspace).
     return `<div class="markdown-embed-placeholder" data-embed-path="${escapeHtml(resolved)}" data-embed-sub="${escapeHtml(link.subpath ?? '')}"></div>`;
   }
+  if (/\.excalidraw$/i.test(resolved)) {
+    // Drawn by embeds.js with the drawing editor's own SVG export.
+    return `<div class="markdown-embed-placeholder" data-embed-path="${escapeHtml(resolved)}" data-embed-kind="drawing"></div>`;
+  }
   if (AUDIO_RE.test(resolved)) return `<audio controls src="${escapeHtml(assetUrl(resolved))}"></audio>`;
   if (VIDEO_RE.test(resolved)) return `<video controls src="${escapeHtml(assetUrl(resolved))}"></video>`;
   if (!IMAGE_FILE.test(resolved)) return renderLink(link, resolved);
@@ -136,7 +140,7 @@ export function renderMarkdown(raw, resolve) {
     currentResolve = () => null;
   }
   return DOMPurify.sanitize(html, {
-    ADD_ATTR: ['data-href', 'data-tag', 'data-embed-path', 'data-embed-sub', 'data-tex', 'controls'],
+    ADD_ATTR: ['data-href', 'data-tag', 'data-embed-path', 'data-embed-sub', 'data-embed-kind', 'data-tex', 'controls'],
     ADD_TAGS: ['audio', 'video'],
     FORBID_TAGS: ['style'],
     FORBID_ATTR: ['style'],

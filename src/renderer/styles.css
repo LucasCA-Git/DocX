@@ -747,3 +747,11 @@ body:not(.show-line-numbers).fold-gutter .editor-host .cm-editor { margin-left: 
 .canvas-color { width: 16px; height: 16px; border-radius: 50%; padding: 0; }
 .canvas-color.is-none { border: 1px solid var(--text-faint); background: transparent; }
 .canvas-zoom-label { font-size: 12px; color: var(--text-muted); min-width: 42px; text-align: right; }
+
+/* Drawing (Excalidraw) and diagram (draw.io) editors fill their tab. */
+.excalidraw-content, .drawio-content { position: relative; overflow: hidden; padding: 0; }
+.excalidraw-host { position: absolute; inset: 0; }
+.excalidraw-error { padding: 24px; color: var(--text-error); }
+.drawio-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: var(--background-primary); }
+.drawing-embed-body { padding: 8px; color: var(--text-muted); }
+.drawing-embed-body img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
