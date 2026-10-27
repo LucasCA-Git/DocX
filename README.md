@@ -9,6 +9,18 @@
   Windows · Ubuntu/Debian · Linux (AppImage)
 </p>
 
+<p align="center">
+  <a href="https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-Setup.exe"><img src="https://img.shields.io/badge/Baixar_para-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Baixar para Windows"></a>
+  <a href="https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-linux-amd64.deb"><img src="https://img.shields.io/badge/Baixar_para-Ubuntu_/_Debian-E95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Baixar para Ubuntu/Debian"></a>
+  <a href="https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-x86_64.AppImage"><img src="https://img.shields.io/badge/Baixar_para-Linux_(AppImage)-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Baixar AppImage para Linux"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/LucasCA-Git/DocX/releases/latest"><img src="https://img.shields.io/github/v/release/LucasCA-Git/DocX?label=vers%C3%A3o&style=flat-square" alt="Última versão"></a>
+  <a href="https://github.com/LucasCA-Git/DocX/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/LucasCA-Git/DocX/release.yml?label=build&style=flat-square" alt="Build"></a>
+  <a href="https://github.com/LucasCA-Git/DocX/releases"><img src="https://img.shields.io/github/downloads/LucasCA-Git/DocX/total?label=downloads&style=flat-square" alt="Downloads"></a>
+</p>
+
 ---
 
 O DocX é um aplicativo desktop para escrever e organizar conhecimento em Markdown. As notas são
@@ -72,18 +84,33 @@ histórico de versões.
 
 ## Instalação
 
-Baixe o instalador na página de **[Releases](https://github.com/LucasCA-Git/Docs/releases/latest)**
+Baixe o instalador na página de **[Releases](https://github.com/LucasCA-Git/DocX/releases/latest)**
 (ou gere localmente, ver [Desenvolvimento](#desenvolvimento)).
 
-| Sistema | Arquivo | Como instalar |
+| Sistema | Download direto | Como instalar |
 |---|---|---|
-| Windows 10/11 (64 bits) | `DocX-Setup-1.0.0.exe` | Assistente de instalação |
-| Ubuntu / Debian (64 bits) | `DocX-1.0.0-linux-amd64.deb` | `apt` ou Central de Aplicativos |
-| Qualquer Linux (64 bits) | `DocX-1.0.0-x86_64.AppImage` | Executável portátil, sem instalar |
+| Windows 10/11 (64 bits) | [DocX-Setup.exe](https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-Setup.exe) | Assistente de instalação |
+| Ubuntu / Debian (64 bits) | [DocX-linux-amd64.deb](https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-linux-amd64.deb) | `apt` ou Central de Aplicativos |
+| Qualquer Linux (64 bits) | [DocX-x86_64.AppImage](https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-x86_64.AppImage) | Executável portátil, sem instalar |
+
+Os links acima sempre baixam a **versão mais recente**. Pelo terminal:
+
+```powershell
+# Windows (PowerShell): baixa e abre o instalador
+Invoke-WebRequest https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-Setup.exe -OutFile "$env:TEMP\DocX-Setup.exe"; Start-Process "$env:TEMP\DocX-Setup.exe"
+```
+
+```bash
+# Ubuntu / Debian: baixa e instala
+wget -O /tmp/DocX.deb https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-linux-amd64.deb && sudo apt install /tmp/DocX.deb
+
+# Qualquer Linux: AppImage
+wget -O ~/DocX.AppImage https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-x86_64.AppImage && chmod +x ~/DocX.AppImage && ~/DocX.AppImage
+```
 
 ### Windows
 
-1. Execute `DocX-Setup-1.0.0.exe`.
+1. Execute `DocX-Setup.exe`.
 2. Na primeira vez, o Windows pode mostrar **"O Windows protegeu o computador"**, porque o instalador
    ainda não tem assinatura digital. Clique em **Mais informações › Executar assim mesmo**.
 3. Siga o assistente: **Avançar**, escolha a pasta de instalação (opcional) e **Instalar**.
@@ -98,7 +125,7 @@ já traz o Git Credential Manager, que faz o login no GitHub/GitLab.
 ### Ubuntu / Debian
 
 ```bash
-sudo apt install ./DocX-1.0.0-linux-amd64.deb
+sudo apt install ./DocX-linux-amd64.deb
 ```
 
 O `apt` instala junto as dependências, inclusive o `git`. O DocX aparece no menu de aplicativos,
@@ -107,8 +134,8 @@ com ícone. Para abrir pelo terminal, use `docx`.
 ### Linux (AppImage)
 
 ```bash
-chmod +x DocX-1.0.0-x86_64.AppImage
-./DocX-1.0.0-x86_64.AppImage
+chmod +x DocX-x86_64.AppImage
+./DocX-x86_64.AppImage
 ```
 
 Não precisa instalar. Para sincronizar com Git, tenha o `git` instalado (`sudo apt install git`,
@@ -271,8 +298,8 @@ são baixados para a plataforma onde o comando roda.
 ### Gerar os instaladores
 
 ```bash
-npm run dist:win     # no Windows  → release/DocX-Setup-<versão>.exe
-npm run dist:linux   # no Linux/WSL → release/DocX-<versão>-linux-amd64.deb e .AppImage
+npm run dist:win     # no Windows  → release/DocX-Setup.exe
+npm run dist:linux   # no Linux/WSL → release/DocX-linux-amd64.deb e DocX-x86_64.AppImage
 ```
 
 O empacotamento usa o [electron-builder](https://www.electron.build).

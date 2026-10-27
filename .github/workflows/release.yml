@@ -80,9 +80,9 @@ jobs:
 
           | Sistema | Arquivo |
           |---|---|
-          | Windows 10/11 (64 bits) | `DocX-Setup-*.exe`: assistente de instalação com atalho na Área de Trabalho e no Menu Iniciar |
-          | Ubuntu / Debian (64 bits) | `DocX-*-linux-amd64.deb`: `sudo apt install ./DocX-*-linux-amd64.deb` |
-          | Qualquer Linux (64 bits) | `DocX-*-x86_64.AppImage`: `chmod +x` e execute |
+          | Windows 10/11 (64 bits) | `DocX-Setup.exe`: assistente de instalação com atalho na Área de Trabalho e no Menu Iniciar |
+          | Ubuntu / Debian (64 bits) | `DocX-linux-amd64.deb`: `sudo apt install ./DocX-linux-amd64.deb` |
+          | Qualquer Linux (64 bits) | `DocX-x86_64.AppImage`: `chmod +x` e execute |
 
           No Windows, o instalador ainda não tem assinatura digital: se aparecer "O Windows protegeu o
           computador", clique em **Mais informações › Executar assim mesmo**.

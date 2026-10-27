@@ -8,7 +8,7 @@
     "name": "Lucas Cardoso Alecrim",
     "email": "lucascardosoalecrim99@gmail.com"
   },
-  "homepage": "https://github.com/LucasCA-Git/Docs",
+  "homepage": "https://github.com/LucasCA-Git/DocX",
   "license": "UNLICENSED",
   "private": true,
   "main": "src/main/main.js",
@@ -69,7 +69,7 @@
         "pt_BR"
       ],
       "language": "1046",
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "DocX-Setup.${ext}"
     },
     "linux": {
       "target": [
@@ -104,10 +104,11 @@
         "libuuid1",
         "libsecret-1-0"
       ],
-      "priority": "optional"
+      "priority": "optional",
+      "artifactName": "DocX-linux-amd64.${ext}"
     },
     "appImage": {
-      "artifactName": "${productName}-${version}-x86_64.${ext}"
+      "artifactName": "DocX-x86_64.${ext}"
     }
   },
   "dependencies": {
