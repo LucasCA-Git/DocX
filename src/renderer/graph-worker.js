@@ -32,8 +32,8 @@ const MASS = { galaxy: 6, sun: 2 };
 
 function orbitForce() {
   let list = [];
-  // Planets always keep to their sun's orbit (they only circle it with gravity on); the rest
-  // circles the center of the graph.
+  // Planets always keep to their sun's orbit (they only circle it with gravity on). Suns stay
+  // still and galaxies only move by their links; loose stars circle the center of the graph.
   const force = () => {
     if (gravity) tick++;
     for (const n of list) {
@@ -41,7 +41,7 @@ function orbitForce() {
       const sun = n.anchor ? byId.get(n.anchor) : null;
       let v;
       if (sun) v = systemPull(n.x - sun.x, n.y - sun.y, n.rest, { spin: gravity ? spin : 0 });
-      else if (gravity) v = orbitalNudge(n.x, n.y, { spin, wander: 1, t: tick, phase: n.phase });
+      else if (gravity && n.type !== 'galaxy') v = orbitalNudge(n.x, n.y, { spin, wander: 1, t: tick, phase: n.phase });
       else continue;
       n.vx += v.vx;
       n.vy += v.vy;
@@ -94,13 +94,21 @@ function setGraph(next, links) {
   nodes = placed.map((p, i) => {
     const prev = old.get(p.id);
     const data = next[i];
+    // A pin is kept only while the node stays the same kind (a sun that turns into a planet lets go).
+    const pin = prev?.type === data.type ? prev : null;
     return {
-      id: p.id, type: data.type, anchor: data.anchor ?? null, x: p.x, y: p.y, vx: prev?.vx ?? 0, vy: prev?.vy ?? 0, fx: prev?.fx, fy: prev?.fy,
+      id: p.id, type: data.type, anchor: data.anchor ?? null, x: p.x, y: p.y, vx: prev?.vx ?? 0, vy: prev?.vy ?? 0, fx: pin?.fx, fy: pin?.fy,
       r: data.radius ?? nodeRadius(data.degree), phase: prev?.phase,
     };
   });
   byId = new Map(nodes.map((n) => [n.id, n]));
   for (const n of nodes) {
+    // The sun is the heaviest body: it holds still (in the middle, or where it was dropped) and
+    // its planets go around it.
+    if (n.type === 'sun' && n.fx == null) {
+      n.x = n.fx = 0;
+      n.y = n.fy = 0;
+    }
     const sun = n.anchor ? byId.get(n.anchor) : null;
     if (n.anchor && !sun) n.anchor = null;
     // Galaxies circle the sun on wider orbits than single files.
@@ -148,7 +156,7 @@ self.onmessage = ({ data }) => {
     sim.alphaTarget(0.3).restart();
   } else if (data.type === 'release') {
     const n = byId.get(data.id);
-    if (n) {
+    if (n && n.type !== 'sun') {
       n.fx = null;
       n.fy = null;
     }
