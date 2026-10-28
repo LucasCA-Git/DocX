@@ -73,6 +73,10 @@ histórico de versões.
   (a nota com o mesmo nome da pasta, senão `README`/`index`, senão a nota mais linkada) e os outros
   documentos e subpastas **orbitam** em volta dele. Para voltar, use a trilha no topo
   (`Cofre › Pasta`) ou dê um duplo clique no espaço vazio. Dá para desligar em Exibição.
+- O grafo **lembra como você deixou**: posições, nós fixados e zoom de cada pasta voltam iguais ao
+  sair e entrar de novo. Com **Fixar nós ao arrastar** (em Forças), o nó fica onde você soltou: um
+  documento mantém a distância do sol e só gira em volta dele; **Soltar nós fixos** libera todos.
+  O controle **Espaçamento** deixa o grafo mais separado ou mais junto.
 - Links feitos dentro de **canvas, desenhos e diagramas** (cartões de nota, `[[Nota]]` em textos,
   links de elementos) entram no grafo e nos backlinks, como os de qualquer nota.
 - **Canvas** (`.canvas`, formato aberto JSON Canvas): cartões de texto, nota, imagem e link, com

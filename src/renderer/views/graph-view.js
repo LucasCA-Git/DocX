@@ -5,8 +5,12 @@ import {
 } from '../../shared/graph-model';
 import { makeStarfield, twinkle } from '../../shared/graph-physics';
 import { galaxyLayout, parentFolder } from '../../shared/graph-galaxy';
+import { rememberLayout, recallLayout } from '../../shared/graph-memory';
 
 const OPTIONS_KEY = 'docs.graph';
+// Where the user left the global graph, per folder (see graph-memory.js).
+const LAYOUT_KEY = 'docs.graph.layout';
+const LAYOUT_SAVE_MS = 3000;
 const UPDATE_DELAY_MS = 300;
 const DRAG_THRESHOLD_PX = 3;
 // Labels fade in between these zoom levels (always shown for the hovered node and neighbours).
@@ -163,13 +167,13 @@ function sprite(color) {
   return SPRITES.get(color);
 }
 
-export const DEFAULT_FORCES = { center: 0.04, repel: 90, link: 0.6, distance: 40, spin: 1 };
+export const DEFAULT_FORCES = { center: 0.04, repel: 90, link: 0.6, distance: 40, spin: 1, spacing: 1 };
 const GROUP_COLORS = ['#e9973f', '#4fb3a9', '#e05d6f', '#5b8def', '#b07de8', '#7cc56b'];
 
 function loadOptions(key) {
   const defaults = {
     attachments: true, unresolved: false, orphans: true, tags: false, arrows: false, search: '',
-    groups: [], depth: 1, nodeSize: 1, constellation: true, gravity: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
+    groups: [], depth: 1, nodeSize: 1, constellation: true, gravity: true, pinOnDrag: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
   };
   try {
     const saved = JSON.parse(localStorage.getItem(key)) ?? {};
@@ -214,6 +218,9 @@ export class GraphView {
     this.pointer = null;
     this.visible = false;
     this.frame = 0;
+    // Nodes the user pinned by dragging, and the folder whose layout is on screen (null: none yet).
+    this.pinned = new Set();
+    this.shownFolder = null;
 
     this.canvas = el('canvas', { class: 'graph-canvas' });
     this.ctx = this.canvas.getContext('2d');
@@ -384,6 +391,14 @@ export class GraphView {
         })),
       section('forces', 'Forças',
         visual('gravity', 'Gravidade (movimento contínuo)', () => this.sendForces()),
+        visual('pinOnDrag', 'Fixar nós ao arrastar', () => {}),
+        this.isLocal ? null : el('button', {
+          class: 'graph-add-group',
+          text: 'Soltar nós fixos',
+          title: 'Os nós que você arrastou voltam a se mover pelas forças',
+          onclick: () => this.unpinAll(),
+        }),
+        force('spacing', 'Espaçamento', 0.3, 3, 0.05),
         force('spin', 'Velocidade da órbita', 0, 3, 0.1),
         force('center', 'Atração ao centro', 0, 0.3, 0.01),
         force('repel', 'Repulsão', 0, 400, 5),
@@ -418,6 +433,7 @@ export class GraphView {
 
   // Enters a galaxy ('' = the vault root). The new folder is framed as it settles.
   showFolder(folder) {
+    this.saveLayout();
     this.options.folder = folder;
     this.fitted = false;
     this.saveOptions();
@@ -469,12 +485,28 @@ export class GraphView {
     if (center !== this.center) this.fitted = false;
     this.center = center;
 
+    // Another folder (or the first time): bring back where the user left it, camera included.
+    const folder = this.galaxiesOn ? this.options.folder : '';
+    let saved = null;
+    if (!this.isLocal && folder !== this.shownFolder) {
+      saved = recallLayout(this.readLayouts(), folder);
+      this.pinned = new Set();
+      this.nodes = [];
+      if (saved?.cam) {
+        this.cam = saved.cam;
+        this.fitted = true;
+      }
+    }
+    this.shownFolder = folder;
     const old = new Map(this.nodes.map((n, i) => [n.id, i]));
     const positions = new Float32Array(nodes.length * 2);
-    nodes.forEach((n, i) => {
+    const restored = nodes.map((n, i) => {
       const j = old.get(n.id);
-      positions[i * 2] = j === undefined ? 0 : this.positions[j * 2];
-      positions[i * 2 + 1] = j === undefined ? 0 : this.positions[j * 2 + 1];
+      const back = j === undefined ? saved?.nodes.get(n.id) : null;
+      positions[i * 2] = j === undefined ? back?.x ?? 0 : this.positions[j * 2];
+      positions[i * 2 + 1] = j === undefined ? back?.y ?? 0 : this.positions[j * 2 + 1];
+      if (back?.pinned) this.pinned.add(n.id);
+      return back;
     });
     const indexById = new Map(nodes.map((n, i) => [n.id, i]));
     this.nodes = nodes;
@@ -495,8 +527,9 @@ export class GraphView {
     this.worker.postMessage({
       type: 'graph',
       gen: this.gen,
-      nodes: nodes.map((n) => ({
+      nodes: nodes.map((n, i) => ({
         id: n.id, degree: n.degree, type: n.type, radius: n.radius, anchor: n.anchor,
+        ...(restored[i] ? { x: restored[i].x, y: restored[i].y, pinned: restored[i].pinned } : {}),
       })),
       links,
     });
@@ -545,9 +578,47 @@ export class GraphView {
       this.positions = data.positions;
       if (!this.fitted) this.fit({ auto: true });
       this.requestDraw();
-    } else if (data.type === 'end' && !this.fitted) {
-      this.fit({ auto: true });
+      this.scheduleLayoutSave();
+    } else if (data.type === 'end') {
+      if (!this.fitted) this.fit({ auto: true });
+      this.saveLayout();
     }
+  }
+
+  // ---------- remembered layout ----------
+
+  readLayouts() {
+    try {
+      return JSON.parse(localStorage.getItem(LAYOUT_KEY));
+    } catch {
+      return null;
+    }
+  }
+
+  // Keeps positions, pins and camera of the folder on screen (global graph only).
+  saveLayout() {
+    clearTimeout(this.layoutTimer);
+    this.layoutTimer = 0;
+    if (this.isLocal || this.shownFolder === null || !this.nodes.length) return;
+    const memory = rememberLayout(this.readLayouts(), this.shownFolder, {
+      ids: this.nodes.map((n) => n.id), positions: this.positions, pinned: this.pinned, cam: this.cam,
+    });
+    try {
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify(memory));
+    } catch {
+      // The layout just won't be remembered.
+    }
+  }
+
+  scheduleLayoutSave() {
+    if (this.isLocal || this.layoutTimer) return;
+    this.layoutTimer = setTimeout(() => this.saveLayout(), LAYOUT_SAVE_MS);
+  }
+
+  unpinAll() {
+    this.pinned.clear();
+    this.worker.postMessage({ type: 'unpin-all' });
+    this.saveLayout();
   }
 
   // ---------- camera ----------
@@ -557,7 +628,8 @@ export class GraphView {
     if (!w || !h) return;
     const dpr = window.devicePixelRatio || 1;
     if (!this.width) {
-      this.cam = { x: w / 2, y: h / 2, k: 1 };
+      // A camera brought back from last time stays as it was.
+      if (!this.fitted) this.cam = { x: w / 2, y: h / 2, k: 1 };
     } else {
       this.cam.x += (w - this.width) / 2;
       this.cam.y += (h - this.height) / 2;
@@ -655,7 +727,14 @@ export class GraphView {
   endDrag() {
     const drag = this.pointer;
     this.pointer = null;
-    if (drag?.moved && drag.id !== null) this.worker.postMessage({ type: 'release', id: drag.id });
+    if (drag?.moved && drag.id !== null) {
+      const pin = Boolean(this.options.pinOnDrag);
+      this.worker.postMessage({ type: 'release', id: drag.id, pin });
+      const node = this.nodes.find((n) => n.id === drag.id);
+      if (pin && node?.type !== 'sun') this.pinned.add(drag.id);
+      else this.pinned.delete(drag.id);
+    }
+    if (drag?.moved) this.scheduleLayoutSave();
     return drag;
   }
 
@@ -665,6 +744,7 @@ export class GraphView {
     const p = this.local(event);
     this.cam = zoomAt(this.cam, Math.exp(-event.deltaY * 0.0015), p.x, p.y);
     this.requestDraw();
+    this.scheduleLayoutSave();
   }
 
   setHover(index) {
@@ -817,6 +897,18 @@ export class GraphView {
       } else {
         ctx.drawImage(sprite(color), x(i) - r, y(i) - r, r * 2, r * 2);
       }
+      // Pinned by the user: a thin dashed ring.
+      if (this.pinned.size && this.pinned.has(nodes[i].id)) {
+        ctx.save();
+        ctx.globalAlpha = 0.7;
+        ctx.strokeStyle = COLORS.highlight;
+        ctx.lineWidth = 1 / cam.k;
+        ctx.setLineDash([3 / cam.k, 3 / cam.k]);
+        ctx.beginPath();
+        ctx.arc(x(i), y(i), r + 4 / cam.k, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     // Labels under the nodes, sized in world units so they grow with zoom.
@@ -895,11 +987,13 @@ export class GraphView {
   }
 
   onHide() {
+    this.saveLayout();
     this.visible = false;
     this.worker.postMessage({ type: 'pause' });
   }
 
   destroy() {
+    this.saveLayout();
     this.visible = false;
     cancelAnimationFrame(this.frame);
     clearTimeout(this.updateTimer);

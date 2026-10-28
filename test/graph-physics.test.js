@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-  orbitalNudge, systemPull, orbitRadius, makeStarfield, twinkle, ORBIT,
+  orbitalNudge, systemPull, orbitRadius, fixedOrbitStep, makeStarfield, twinkle, ORBIT,
 } = require('../src/shared/graph-physics');
 
 const dot = (a, b) => a.vx * b.x + a.vy * b.y;
@@ -85,4 +85,29 @@ test('orbitRadius: outside both bodies, stable per planet and spread over a few 
   assert.equal(orbitRadius(12, 4, 'a.md'), orbitRadius(12, 4, 'a.md'));
   const rings = new Set(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id) => orbitRadius(12, 4, `${id}.md`)));
   assert.ok(rings.size >= 3);
+});
+
+test('orbitRadius grows with the spacing', () => {
+  assert.equal(orbitRadius(10, 4, 'a.md', 2), orbitRadius(10, 4, 'a.md') * 2);
+  assert.equal(orbitRadius(10, 4, 'a.md', 1), orbitRadius(10, 4, 'a.md'));
+});
+
+test('fixedOrbitStep keeps a pinned planet on its circle and turns it', () => {
+  // Start at (100, 0) from the sun, radius 100.
+  let x = 100;
+  let y = 0;
+  for (let i = 0; i < 50; i++) {
+    const step = fixedOrbitStep(x, y, 100, { spin: 1 });
+    x += step.dx;
+    y += step.dy;
+    assert.ok(Math.abs(Math.hypot(x, y) - 100) < 1e-6);
+  }
+  // Turned counter-clockwise on screen (y down): like systemPull.
+  assert.ok(y < 0);
+  // A planet dragged off its circle goes straight back to it.
+  const back = fixedOrbitStep(150, 0, 100, { spin: 0 });
+  assert.deepEqual({ dx: Math.round(back.dx), dy: Math.round(back.dy) }, { dx: -50, dy: 0 });
+  // No spin, on the circle: it stays put.
+  const still = fixedOrbitStep(0, 100, 100, { spin: 0 });
+  assert.ok(Math.abs(still.dx) < 1e-9 && Math.abs(still.dy) < 1e-9);
 });

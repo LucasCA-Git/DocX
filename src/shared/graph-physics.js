@@ -42,10 +42,22 @@ function systemPull(dx, dy, rest, { spin }) {
 
 // Orbit radius of a planet around its sun: clear of both bodies, on one of a few rings picked from
 // the id (stable between updates), so a crowded system spreads out instead of piling up.
-function orbitRadius(sunR, planetR, id) {
+// `spacing` (the "Espaçamento" slider) spreads the whole system out or pulls it in.
+function orbitRadius(sunR, planetR, id, spacing = 1) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (Math.imul(h, 31) + id.charCodeAt(i)) >>> 0;
-  return sunR + planetR + 16 + (h % 5) * 11;
+  return (sunR + planetR + 16 + (h % 5) * 11) * spacing;
+}
+
+// A planet the user pinned: it keeps the distance to its sun where it was dropped and only turns
+// around it (same direction and speed as systemPull). Returns the move for this tick, from the
+// planet's offset to its sun (dx, dy): it lands on the circle of radius `rest`, a bit further round.
+function fixedOrbitStep(dx, dy, rest, { spin }) {
+  const d = Math.hypot(dx, dy);
+  const angle = d < 1e-6 ? 0 : Math.atan2(dy, dx);
+  const speed = spin > 0 ? Math.min(ORBIT.planetSpeed, ORBIT.planetSpeed * spin * 0.5 * Math.sqrt(60 / Math.max(rest, 30))) : 0;
+  const next = angle - (speed * 1.5) / Math.max(rest, 1);
+  return { dx: Math.cos(next) * rest - dx, dy: Math.sin(next) * rest - dy };
 }
 
 // Small, fast seeded generator (mulberry32): the same sky every time.
@@ -83,4 +95,4 @@ function twinkle(base, phase, t) {
   return Math.min(1, Math.max(0, v));
 }
 
-module.exports = { ORBIT, orbitalNudge, systemPull, orbitRadius, makeStarfield, twinkle };
+module.exports = { ORBIT, orbitalNudge, systemPull, orbitRadius, fixedOrbitStep, makeStarfield, twinkle };
