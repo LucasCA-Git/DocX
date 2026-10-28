@@ -508,6 +508,35 @@ export class GraphView {
     return (n.radius ?? nodeRadius(n.degree)) * this.options.nodeSize;
   }
 
+  // The docs of a galaxy as a little solar system in its middle: a sun and one planet per doc (up
+  // to 12) on tilted rings, the inner ones faster. A preview of what entering the galaxy shows.
+  drawSystem(ctx, cx, cy, r, count, time, seed) {
+    const planets = Math.min(12, Math.max(0, count - 1));
+    const alpha = ctx.globalAlpha;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, 0.6);
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = 'rgba(255, 240, 210, 0.18)';
+    for (let p = 0; p < planets; p++) {
+      const ring = 0.32 + (p % 4) * 0.17;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * ring, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    for (let p = 0; p < planets; p++) {
+      const ring = 0.32 + (p % 4) * 0.17;
+      const angle = seed * 2.1 + p * 2.399 + time * 0.03 / Math.sqrt(ring * 4);
+      const size = Math.max(1, r * 0.06);
+      ctx.globalAlpha = alpha * 0.9;
+      ctx.drawImage(glowSprite('#cfe0ff'), Math.cos(angle) * r * ring - size * 2, Math.sin(angle) * r * ring - size * 2, size * 4, size * 4);
+    }
+    ctx.restore();
+    const sun = Math.max(2.5, r * 0.16);
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(sunSprite(), cx - sun * 2.6, cy - sun * 2.6, sun * 5.2, sun * 5.2);
+  }
+
   onWorker(data) {
     if (data.gen !== this.gen) return;
     // Until the user zooms, pans or drags, the camera follows the layout as it spreads out (and
@@ -774,6 +803,7 @@ export class GraphView {
         ctx.scale(1, 0.82);
         ctx.drawImage(galaxySprite(folderHue(nodes[i].folder)), -r * 1.6, -r * 1.6, r * 3.2, r * 3.2);
         ctx.restore();
+        this.drawSystem(ctx, x(i), y(i), r, nodes[i].count, time, i);
       } else if (nodes[i].type === 'sun') {
         // The corona breathes a little.
         const pulse = 1 + 0.06 * Math.sin(time * 0.04 + i);

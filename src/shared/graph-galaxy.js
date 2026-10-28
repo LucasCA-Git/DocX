@@ -2,8 +2,8 @@
 
 // Galaxy view of the graph: every folder is a galaxy. The view shows one folder at a time (the
 // vault root at first): its root file is the sun, its other files orbit the sun (`anchor`), and its
-// subfolders are galaxies, one node each with their links merged. Entering a galaxy shows only what
-// is inside it. Pure: used by the graph view and the tests.
+// subfolders are galaxies, one node each with their links merged. Galaxies orbit nothing: only
+// links bring them together, unlinked ones drift apart. Entering a galaxy shows only what is inside it. Pure: used by the graph view and the tests.
 
 const { nodeRadius } = require('./graph-model');
 
@@ -99,7 +99,7 @@ function galaxyLayout({ nodes, links }, { folder = '' } = {}) {
   return {
     nodes: visible.map((n) => {
       const d = degree.get(n.id) ?? 0;
-      if (n.type === 'galaxy') return { ...n, degree: d, radius: galaxyRadius(n.count), anchor: sun };
+      if (n.type === 'galaxy') return { ...n, degree: d, radius: galaxyRadius(n.count), anchor: null };
       if (n.folder === null) return { ...n, degree: d, radius: nodeRadius(d), anchor: null };
       if (n.id === sun) return { ...n, type: 'sun', kind: n.type, degree: d, radius: sunRadius(d), anchor: null };
       return { ...n, degree: d, radius: nodeRadius(d), anchor: sun };

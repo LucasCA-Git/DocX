@@ -46,7 +46,9 @@ test('at the vault root: root files around the root sun, folders as galaxies', (
   assert.equal(nodes.get('README.md').type, 'sun');
   assert.equal(nodes.get('README.md').anchor, null);
   assert.equal(nodes.get('Ideias.md').anchor, 'README.md');
-  assert.equal(projetos.anchor, 'README.md');
+  // Galaxies are not tied to any sun: only links bring them together.
+  assert.equal(projetos.anchor, null);
+  assert.equal(nodes.get(galaxyId('Diario')).anchor, null);
   // Links into a galaxy are merged into one per pair.
   assert.deepEqual(pairs(layout), [
     pair('Ideias.md', galaxyId('Diario')),
@@ -64,7 +66,7 @@ test('inside a galaxy only its contents show: its sun, its docs and its subfolde
   assert.equal(nodes.get('Projetos/Projetos.md').type, 'sun');
   assert.equal(nodes.get('Projetos/Projetos.md').anchor, null);
   assert.equal(nodes.get('Projetos/Alpha.md').anchor, 'Projetos/Projetos.md');
-  assert.equal(nodes.get(galaxyId('Projetos/Antigos')).anchor, 'Projetos/Projetos.md');
+  assert.equal(nodes.get(galaxyId('Projetos/Antigos')).anchor, null);
   assert.equal(nodes.get(galaxyId('Projetos/Antigos')).count, 2);
   // Links leaving the folder (Projetos → Ideias) are not shown.
   assert.deepEqual(pairs(layout), [
@@ -81,7 +83,7 @@ test('a nested galaxy and an empty or missing folder', () => {
   assert.equal(galaxyLayout(graphData(vault()), { folder: 'Nada' }).nodes.length, 0);
 });
 
-test('a folder with only subfolders has no sun; its galaxies float free', () => {
+test('a folder with only subfolders has no sun', () => {
   const index = new LinkIndex();
   index.setFiles(['Vazia/Sub/Nota.md']);
   index.update('Vazia/Sub/Nota.md', '');

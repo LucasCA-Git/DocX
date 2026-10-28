@@ -26,8 +26,9 @@ let repel = 90;
 let linkStrength = 0.6;
 let linkDistance = 40;
 let center = 0.04;
-// Galaxies and suns are heavier: they push the rest farther away.
-const MASS = { galaxy: 3, sun: 2 };
+// Galaxies and suns are heavier: they push the rest farther away, so galaxies with no link between
+// them stay apart.
+const MASS = { galaxy: 6, sun: 2 };
 
 function orbitForce() {
   let list = [];
@@ -103,7 +104,7 @@ function setGraph(next, links) {
     const sun = n.anchor ? byId.get(n.anchor) : null;
     if (n.anchor && !sun) n.anchor = null;
     // Galaxies circle the sun on wider orbits than single files.
-    if (sun) n.rest = orbitRadius(sun.r, n.r, n.id) + (n.type === 'galaxy' ? 70 : 0);
+    if (sun) n.rest = orbitRadius(sun.r, n.r, n.id);
   }
   sim.nodes(nodes);
   sim.force('link').links(links.map((l) => ({ source: l.source, target: l.target })));
