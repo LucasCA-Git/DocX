@@ -219,7 +219,7 @@ export class GraphView {
     this.visible = false;
     this.frame = 0;
     // Nodes the user pinned by dragging, and the folder whose layout is on screen (null: none yet).
-    this.pinned = new Set();
+    this.pinnedNodes = new Set();
     this.shownFolder = null;
 
     this.canvas = el('canvas', { class: 'graph-canvas' });
@@ -490,7 +490,7 @@ export class GraphView {
     let saved = null;
     if (!this.isLocal && folder !== this.shownFolder) {
       saved = recallLayout(this.readLayouts(), folder);
-      this.pinned = new Set();
+      this.pinnedNodes = new Set();
       this.nodes = [];
       if (saved?.cam) {
         this.cam = saved.cam;
@@ -505,7 +505,7 @@ export class GraphView {
       const back = j === undefined ? saved?.nodes.get(n.id) : null;
       positions[i * 2] = j === undefined ? back?.x ?? 0 : this.positions[j * 2];
       positions[i * 2 + 1] = j === undefined ? back?.y ?? 0 : this.positions[j * 2 + 1];
-      if (back?.pinned) this.pinned.add(n.id);
+      if (back?.pinned) this.pinnedNodes.add(n.id);
       return back;
     });
     const indexById = new Map(nodes.map((n, i) => [n.id, i]));
@@ -601,7 +601,7 @@ export class GraphView {
     this.layoutTimer = 0;
     if (this.isLocal || this.shownFolder === null || !this.nodes.length) return;
     const memory = rememberLayout(this.readLayouts(), this.shownFolder, {
-      ids: this.nodes.map((n) => n.id), positions: this.positions, pinned: this.pinned, cam: this.cam,
+      ids: this.nodes.map((n) => n.id), positions: this.positions, pinned: this.pinnedNodes, cam: this.cam,
     });
     try {
       localStorage.setItem(LAYOUT_KEY, JSON.stringify(memory));
@@ -616,7 +616,7 @@ export class GraphView {
   }
 
   unpinAll() {
-    this.pinned.clear();
+    this.pinnedNodes.clear();
     this.worker.postMessage({ type: 'unpin-all' });
     this.saveLayout();
   }
@@ -731,8 +731,8 @@ export class GraphView {
       const pin = Boolean(this.options.pinOnDrag);
       this.worker.postMessage({ type: 'release', id: drag.id, pin });
       const node = this.nodes.find((n) => n.id === drag.id);
-      if (pin && node?.type !== 'sun') this.pinned.add(drag.id);
-      else this.pinned.delete(drag.id);
+      if (pin && node?.type !== 'sun') this.pinnedNodes.add(drag.id);
+      else this.pinnedNodes.delete(drag.id);
     }
     if (drag?.moved) this.scheduleLayoutSave();
     return drag;
@@ -898,7 +898,7 @@ export class GraphView {
         ctx.drawImage(sprite(color), x(i) - r, y(i) - r, r * 2, r * 2);
       }
       // Pinned by the user: a thin dashed ring.
-      if (this.pinned.size && this.pinned.has(nodes[i].id)) {
+      if (this.pinnedNodes.size && this.pinnedNodes.has(nodes[i].id)) {
         ctx.save();
         ctx.globalAlpha = 0.7;
         ctx.strokeStyle = COLORS.highlight;
