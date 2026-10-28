@@ -64,6 +64,12 @@ test('readTexts only reads notes and skips files above the size limit', async ()
   assert.deepEqual(await vault.readTexts(['A.md', 'img.png', 'Grande.md'], { maxBytes: 50 }), ['a', null, null]);
 });
 
+test('readTexts also reads canvases, drawings and diagrams (their links are indexed)', async () => {
+  const vault = await tempVault();
+  for (const rel of ['M.canvas', 'D.excalidraw', 'F.drawio', 'F.drawio.svg', 'foto.svg']) await vault.write(rel, rel);
+  assert.deepEqual(await vault.readTexts(['M.canvas', 'D.excalidraw', 'F.drawio', 'F.drawio.svg', 'foto.svg']), ['M.canvas', 'D.excalidraw', 'F.drawio', 'F.drawio.svg', null]);
+});
+
 test('listTree with times gives modified and created times per file', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'docs-vault-'));
   const vault = new Vault(root);

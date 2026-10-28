@@ -6,7 +6,7 @@
 
 // Velocity added per simulation tick. With d3's velocity decay (0.4) a constant nudge settles at
 // about 1.5x its size, so maxSpeed 0.25 is ~0.4 world units per tick at most.
-const ORBIT = { maxSpeed: 0.25, core: 120, wander: 0.06 };
+const ORBIT = { maxSpeed: 0.25, core: 120, wander: 0.06, planetSpeed: 0.45, pull: 0.08 };
 
 // Tangential nudge around (0, 0) with a galaxy-like rotation curve: speed grows near the core and
 // flattens farther out, so inner nodes turn faster. Counter-clockwise on screen (y points down).
@@ -26,6 +26,26 @@ function orbitalNudge(x, y, { spin, wander, t, phase }) {
     vy += w * Math.cos(t * 0.009 + phase * 1.3) * Math.sin(t * 0.005 + phase * 0.6 + 1);
   }
   return { vx, vy };
+}
+
+// A planet at (dx, dy) from its sun: a spring back to its orbit radius `rest` plus a tangential push
+// (same turning direction as orbitalNudge) that is faster on inner orbits, like Kepler's planets.
+function systemPull(dx, dy, rest, { spin }) {
+  const d = Math.hypot(dx, dy);
+  if (d < 1e-6) return { vx: 0, vy: 0 };
+  const ux = dx / d;
+  const uy = dy / d;
+  const radial = (rest - d) * ORBIT.pull;
+  const speed = spin > 0 ? Math.min(ORBIT.planetSpeed, ORBIT.planetSpeed * spin * 0.5 * Math.sqrt(60 / Math.max(d, 30))) : 0;
+  return { vx: ux * radial + uy * speed, vy: uy * radial - ux * speed };
+}
+
+// Orbit radius of a planet around its sun: clear of both bodies, on one of a few rings picked from
+// the id (stable between updates), so a crowded system spreads out instead of piling up.
+function orbitRadius(sunR, planetR, id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (Math.imul(h, 31) + id.charCodeAt(i)) >>> 0;
+  return sunR + planetR + 16 + (h % 5) * 11;
 }
 
 // Small, fast seeded generator (mulberry32): the same sky every time.
@@ -63,4 +83,4 @@ function twinkle(base, phase, t) {
   return Math.min(1, Math.max(0, v));
 }
 
-module.exports = { ORBIT, orbitalNudge, makeStarfield, twinkle };
+module.exports = { ORBIT, orbitalNudge, systemPull, orbitRadius, makeStarfield, twinkle };

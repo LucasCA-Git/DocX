@@ -7,7 +7,8 @@ const crypto = require('node:crypto');
 
 let tmpCounter = 0;
 
-const TEXT_NOTE_RE = /\.(md|markdown|txt)$/i;
+// Notes, plus canvases, drawings and diagrams (read for the links inside them).
+const TEXT_NOTE_RE = /\.(md|markdown|txt|canvas|excalidraw|drawio|drawio\.svg)$/i;
 const MAX_NOTE_BYTES = 5 * 1024 * 1024;
 const READ_BATCH = 64;
 

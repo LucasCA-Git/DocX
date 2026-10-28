@@ -3,7 +3,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { orbitalNudge, makeStarfield, twinkle, ORBIT } = require('../src/shared/graph-physics');
+const {
+  orbitalNudge, systemPull, orbitRadius, makeStarfield, twinkle, ORBIT,
+} = require('../src/shared/graph-physics');
 
 const dot = (a, b) => a.vx * b.x + a.vy * b.y;
 
@@ -62,4 +64,25 @@ test('twinkle stays within [0, 1] and changes over time', () => {
   for (let t = 0; t < 600; t += 7) values.push(twinkle(0.8, 1.3, t));
   assert.ok(values.every((v) => v >= 0 && v <= 1));
   assert.ok(Math.max(...values) - Math.min(...values) > 0.1);
+});
+
+test('systemPull: a planet goes back to its orbit and circles its sun', () => {
+  const far = systemPull(200, 0, 60, { spin: 0 });
+  assert.ok(far.vx < 0 && Math.abs(far.vy) < 1e-9);
+  const close = systemPull(20, 0, 60, { spin: 0 });
+  assert.ok(close.vx > 0);
+  const onOrbit = systemPull(0, 60, 60, { spin: 1 });
+  assert.ok(Math.abs(onOrbit.vy) < 1e-9);
+  assert.ok(onOrbit.vx > 0);
+  assert.ok(Math.hypot(onOrbit.vx, onOrbit.vy) <= ORBIT.planetSpeed + 1e-9);
+  // Inner orbits turn faster, like planets.
+  assert.ok(Math.abs(systemPull(0, 40, 40, { spin: 1 }).vx) > Math.abs(systemPull(0, 160, 160, { spin: 1 }).vx));
+  assert.deepEqual(systemPull(0, 0, 60, { spin: 1 }), { vx: 0, vy: 0 });
+});
+
+test('orbitRadius: outside both bodies, stable per planet and spread over a few rings', () => {
+  assert.ok(orbitRadius(12, 4, 'a.md') > 16);
+  assert.equal(orbitRadius(12, 4, 'a.md'), orbitRadius(12, 4, 'a.md'));
+  const rings = new Set(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id) => orbitRadius(12, 4, `${id}.md`)));
+  assert.ok(rings.size >= 3);
 });

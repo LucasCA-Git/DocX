@@ -131,8 +131,8 @@ function zoomAt(cam, factor, sx, sy) {
   return { k, x: sx - w.x * k, y: sy - w.y * k };
 }
 
-// Index of the node nearest to world point (wx, wy) within its radius (never smaller than a few
-// screen pixels), or -1.
+// Index of the node nearest to world point (wx, wy) within its radius (`radius`, or the one its
+// links give; never smaller than a few screen pixels), or -1.
 function hitTest(nodes, positions, wx, wy, k) {
   let best = -1;
   let bestDist = Infinity;
@@ -140,7 +140,7 @@ function hitTest(nodes, positions, wx, wy, k) {
     const dx = positions[i * 2] - wx;
     const dy = positions[i * 2 + 1] - wy;
     const dist = Math.hypot(dx, dy);
-    const reach = Math.max(nodeRadius(nodes[i].degree), MIN_HIT_PX / k);
+    const reach = Math.max(nodes[i].radius ?? nodeRadius(nodes[i].degree), MIN_HIT_PX / k);
     if (dist <= reach && dist < bestDist) {
       best = i;
       bestDist = dist;

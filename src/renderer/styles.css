@@ -682,6 +682,13 @@ body:not(.show-line-numbers).fold-gutter .editor-host .cm-editor { margin-left: 
 .graph-controls { max-height: calc(100% - 24px); overflow-y: auto; }
 .graph-controls.is-collapsed { width: auto; padding: 2px; }
 .graph-controls-title { flex: 1; font-weight: 600; color: var(--text-muted); }
+.graph-trail { position: absolute; top: 10px; left: 10px; display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 8px; background: var(--background-secondary); border: 1px solid var(--background-modifier-border); color: var(--text-muted); font-size: 13px; z-index: 2; }
+.graph-trail[hidden] { display: none; }
+.graph-trail > svg { cursor: pointer; }
+.graph-trail > svg:hover, .graph-trail-step:hover { color: var(--text-normal); }
+.graph-trail-step { background: none; border: none; padding: 0 2px; color: inherit; font: inherit; cursor: pointer; }
+.graph-trail-step.is-current { color: var(--text-normal); font-weight: 600; cursor: default; }
+.graph-trail-sep { opacity: 0.6; }
 .graph-section { border-top: 1px solid var(--background-modifier-border); padding-top: 4px; }
 .graph-section-title { display: flex; align-items: center; gap: 4px; cursor: pointer; color: var(--text-muted); font-weight: 600; padding: 2px 0; }
 .graph-section-title:hover { color: var(--text-normal); }

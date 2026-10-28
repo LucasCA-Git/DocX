@@ -69,6 +69,13 @@ histórico de versões.
   brilham e linhas de constelação. Com a **gravidade** ligada, as notas orbitam devagar o centro e
   flutuam, e arrastar uma estrela puxa as vizinhas. Também tem grupos coloridos, tags como nós,
   setas, filtros e forças ajustáveis (as duas opções podem ser desligadas no painel do grafo).
+- **Galáxias**: no grafo, cada pasta é uma galáxia (com o número de arquivos). Clique numa galáxia
+  para entrar nela: aparece só o que está dentro da pasta. O **arquivo raiz** da pasta vira o **sol**
+  (a nota com o mesmo nome da pasta, senão `README`/`index`, senão a nota mais linkada) e os outros
+  documentos e subpastas **orbitam** em volta dele. Para voltar, use a trilha no topo
+  (`Cofre › Pasta`) ou dê um duplo clique no espaço vazio. Dá para desligar em Exibição.
+- Links feitos dentro de **canvas, desenhos e diagramas** (cartões de nota, `[[Nota]]` em textos,
+  links de elementos) entram no grafo e nos backlinks, como os de qualquer nota.
 - **Canvas** (`.canvas`, formato aberto JSON Canvas): cartões de texto, nota, imagem e link, com
   conexões, grupos e cores.
 - Busca no vault com operadores: `tag:`, `path:`, `file:`, `"frase exata"`, `-excluir`, `OR` e
