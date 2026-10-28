@@ -8,7 +8,7 @@ function subscribe(channel, callback) {
   return () => ipcRenderer.removeListener(channel, listener);
 }
 
-// The only surface the UI gets: no Node, no fs, no AWS credentials.
+// The only surface the UI gets: no Node, no fs, no credentials.
 contextBridge.exposeInMainWorld('docs', {
   getConfig: () => ipcRenderer.invoke('config:get'),
   saveConfig: (cfg) => ipcRenderer.invoke('config:save', cfg),

@@ -90,3 +90,9 @@ test('copy duplicates a file and refuses to overwrite', async () => {
   await assert.rejects(vault.copy('a.png', 'pasta/b.png'), /já existe/);
   await assert.rejects(vault.copy('a.png', '.oculto.png'), /"\."/);
 });
+
+test('vault rejects paths outside its folder', async () => {
+  const vault = await tempVault();
+  assert.throws(() => vault.resolve('../fora.md'), /fora do vault/);
+  assert.throws(() => vault.resolve(''), /inválido/);
+});

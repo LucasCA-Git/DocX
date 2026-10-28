@@ -89,7 +89,7 @@ export function renderSyncStatus(status) {
       lastError = null;
       name = 'cloud';
       text = 'Sincronizado';
-      node.title = `${status.provider === 's3' ? 'S3' : 'Git'} sincronizado às ${new Date(status.at).toLocaleTimeString()}`;
+      node.title = `Git sincronizado às ${new Date(status.at).toLocaleTimeString()}`;
       node.classList.add('is-ok');
       break;
     case 'error':

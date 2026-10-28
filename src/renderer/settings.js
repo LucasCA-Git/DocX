@@ -77,20 +77,13 @@ export function setupSettings({ beforeSave, onSaved, extraSections = [] }) {
     const vaultPath = input('vaultPath', { required: true });
     const provider = el('select', { name: 'syncProvider' },
       el('option', { value: 'git', text: 'Git (GitHub, GitLab…)' }),
-      el('option', { value: 's3', text: 'Amazon S3' }),
       el('option', { value: 'none', text: 'Nenhuma (só neste computador)' }));
     provider.value = cfg.syncProvider ?? 'git';
     const gitBox = el('div', { class: 'settings-group' },
       settingRow('URL do repositório', 'Crie um repositório privado vazio (ex.: no GitHub) e cole a URL: https://github.com/voce/notas.git ou git@github.com:voce/notas.git. O login é feito pelo Git (Git Credential Manager ou sua chave SSH); o app nunca vê a senha.', input('gitUrl', { placeholder: 'https://github.com/voce/notas.git', class: 'setting-wide' })),
       settingRow('Branch', null, input('gitBranch', { placeholder: 'main' })));
-    const s3Box = el('div', { class: 'settings-group' },
-      settingRow('Bucket', null, input('bucket', { placeholder: 'meu-bucket-de-notas' })),
-      settingRow('Prefixo (opcional)', null, input('prefix', { placeholder: 'notas' })),
-      settingRow('Região', 'Se estiver errada, o app encontra a região certa do bucket sozinho.', input('region', { placeholder: 'sa-east-1' })),
-      settingRow('Perfil do AWS CLI', 'Credenciais lidas de ~/.aws pelo processo principal.', input('profile', { placeholder: 'default' })));
     const sync = () => {
       gitBox.hidden = provider.value !== 'git';
-      s3Box.hidden = provider.value !== 's3';
     };
     provider.addEventListener('change', sync);
     sync();
@@ -107,7 +100,6 @@ export function setupSettings({ beforeSave, onSaved, extraSections = [] }) {
         }))),
       settingRow('Sincronização', null, provider),
       gitBox,
-      s3Box,
       error,
       el('div', { class: 'buttons' }, el('button', { type: 'submit', class: 'mod-cta', text: 'Salvar' })));
     form.addEventListener('submit', async (event) => {

@@ -36,7 +36,6 @@ histórico de versões.
 - [Desenhos e diagramas](#desenhos-e-diagramas)
 - [Primeiros passos](#primeiros-passos)
 - [Sincronização com Git](#sincronização-com-git-padrão)
-- [Sincronização com S3 (alternativa)](#sincronização-com-s3-alternativa)
 - [Escrevendo notas](#escrevendo-notas)
 - [Atalhos de teclado](#atalhos-de-teclado)
 - [Onde ficam os dados](#onde-ficam-os-dados)
@@ -104,7 +103,6 @@ histórico de versões.
 **Sincronização**
 - **Git** (padrão): commit, envio e recebimento automáticos, histórico de versões por nota, cópia
   de conflito em vez de sobrescrever e funcionamento offline.
-- **Amazon S3** como alternativa.
 
 ## Instalação
 
@@ -188,7 +186,7 @@ Dicas:
 
 1. Abra o DocX e vá em **⚙ Configurações › Vault e sincronização**.
 2. Em **Pasta das notas**, escolha uma pasta (nova ou com arquivos `.md` que você já tenha).
-3. Escolha como sincronizar: **Git** (recomendado), **S3** ou **nenhum** (só local).
+3. Escolha como sincronizar: **Git** (recomendado) ou **nenhum** (só local).
 4. Crie a primeira nota com `Ctrl+N`, ou abra a troca rápida com `Ctrl+O` e digite um nome.
 
 ## Sincronização com Git (padrão)
@@ -220,27 +218,10 @@ O DocX nunca vê nem guarda a sua senha ou token. Uma URL com credencial embutid
   para a atual e permite restaurar qualquer uma.
 - A barra de status mostra o estado (sincronizado, sincronizando, sem conexão, erro) e tem
   **Sincronizar agora**.
-- Arquivos e pastas que começam com `.` (por exemplo `.trash` e `.docs-sync`) não vão para o Git.
+- Arquivos e pastas que começam com `.` (por exemplo `.trash`) não vão para o Git.
 
 Como é um repositório Git comum, você também pode usar `git log`, outros clientes Git ou outros
 editores de Markdown na mesma pasta.
-
-## Sincronização com S3 (alternativa)
-
-1. **Credenciais:** o DocX lê o perfil do AWS CLI (`~/.aws/credentials` e `~/.aws/config`; no
-   Windows, `%USERPROFILE%\.aws`).
-2. **Bucket** (uma vez):
-   ```bash
-   bash scripts/create-bucket.sh <nome-unico> sa-east-1 default
-   ```
-   O script cria um bucket privado, com versionamento e criptografia. A política IAM mínima está em
-   `scripts/iam-policy.json`.
-3. No DocX, escolha **S3** e informe bucket, região e perfil. Se a região estiver errada, o DocX
-   descobre a certa sozinho.
-
-O comportamento é o mesmo do Git: envio em menos de 1 segundo ao salvar, sincronização completa a
-cada 30 segundos, cópia de conflito e nota apagada vai para `.trash/` (recuperável pelo
-versionamento do bucket).
 
 ## Escrevendo notas
 
@@ -303,13 +284,13 @@ Atalhos de teclado**.
 | Configurações do app | Windows: `%APPDATA%\DocX` · Linux: `~/.config/DocX` |
 | Lixeira | `.trash/` dentro do vault |
 
-As configurações nunca vão para o Git nem para o S3. Quem usava a versão anterior (chamada "Docs")
+As configurações nunca vão para o Git. Quem usava a versão anterior (chamada "Docs")
 tem as configurações copiadas automaticamente na primeira abertura do DocX.
 
 ## Privacidade e segurança
 
-- Sem servidor próprio, sem conta e sem telemetria: as notas vão apenas para o repositório ou bucket
-  que você configurou.
+- Sem servidor próprio, sem conta e sem telemetria: as notas vão apenas para o repositório que você
+  configurou.
 - Login do Git fica com o Git Credential Manager ou com a sua chave SSH. O DocX não lê nem guarda
   senhas ou tokens.
 - O DocX ignora hooks e configurações perigosas de repositórios Git, e só aceita remotos `https` e
@@ -371,12 +352,12 @@ em `build/icon-source.png`, com as versões recortadas em `build/icon.png` e `bu
 
 ```
 src/
-  main/       processo principal: janela, vault, configurações, sync Git (sync/git-sync.js) e S3
+  main/       processo principal: janela, vault, configurações, sync Git (sync/git-sync.js)
   preload/    ponte segura entre o main e a interface
   renderer/   interface: editor, explorador, grafo, canvas, painéis, configurações
   shared/     lógica pura (links, Markdown, busca, grafo, canvas, modelos…), coberta por testes
 test/         testes unitários e de integração (incluem repositórios Git locais)
-scripts/      build do renderer e criação do bucket S3
+scripts/      build do renderer
 build/        ícones e recursos dos instaladores
 ```
 

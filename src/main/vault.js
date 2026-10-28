@@ -51,7 +51,7 @@ class Vault {
     return (await this.listTree()).files;
   }
 
-  // Folders are listed too so empty ones still show in the explorer (S3 has no empty folders).
+  // Folders are listed too so empty ones still show in the explorer.
   // withTimes adds times: { rel: [modified ms, created ms] } for sorting the explorer.
   async listTree({ withTimes = false } = {}) {
     const files = [];

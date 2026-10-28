@@ -3,11 +3,8 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, protocol, Menu, session } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
-const { ConfigStore, isS3Configured, isGitConfigured } = require('./config');
+const { ConfigStore, isGitConfigured } = require('./config');
 const { Vault } = require('./vault');
-const { SyncEngine } = require('./sync/engine');
-const { SyncState } = require('./sync/state');
-const { S3Remote } = require('./sync/s3-remote');
 const { GitSync } = require('./sync/git-sync');
 const { resolveAsset, assetHeaders, parseRange } = require('./asset-protocol');
 const { createReadStream } = require('node:fs');
@@ -73,11 +70,6 @@ async function openVault() {
     await fs.rm(hooksDir, { recursive: true, force: true });
     await fs.mkdir(hooksDir, { recursive: true });
     engine = new GitSync({ vault, url: config.gitUrl, branch: config.gitBranch, hooksDir });
-  } else if (isS3Configured(config)) {
-    const remote = new S3Remote(config);
-    const statePath = path.join(vault.root, '.docs-sync', 'state.json');
-    const state = await SyncState.load(statePath, `${config.bucket}/${config.prefix}`);
-    engine = new SyncEngine({ vault, remote, state });
   } else {
     setStatus({ state: 'disabled', message: 'Sincronização não configurada' });
     return;
@@ -139,7 +131,7 @@ function handle(channel, fn) {
 }
 
 function registerIpc() {
-  const publicConfig = () => ({ ...config, s3Configured: isS3Configured(config), gitConfigured: isGitConfigured(config) });
+  const publicConfig = () => ({ ...config, gitConfigured: isGitConfigured(config) });
   handle('config:get', publicConfig);
   handle('config:save', async (input) => {
     config = configStore.save(input);

@@ -8,7 +8,9 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const { Vault } = require('../src/main/vault');
-const { GitSync, validateRemoteUrl, validateBranch, describeGitError, findGit } = require('../src/main/sync/git-sync');
+const {
+  GitSync, validateRemoteUrl, validateBranch, describeGitError, findGit, conflictName,
+} = require('../src/main/sync/git-sync');
 
 // Isolated from the developer's ~/.gitconfig: no identity, no hooks, no credential helpers. An empty
 // file rather than os.devNull, which Git for Windows cannot open (\\.\nul).
@@ -410,4 +412,9 @@ test('after a login failure the timer pauses, a manual sync still runs', async (
   await a.sync.syncAll();
   assert.equal(ran, true);
   await a.sync.syncAll({ force: false });
+});
+
+test('conflictName keeps the extension', () => {
+  const name = conflictName('pasta/nota.md', new Date(2026, 9, 21, 15, 30, 5));
+  assert.equal(name, 'pasta/nota (conflito 2026-10-21 153005).md');
 });

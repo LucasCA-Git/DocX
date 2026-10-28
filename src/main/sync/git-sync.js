@@ -6,7 +6,15 @@ const fs = require('node:fs');
 const fsp = fs.promises;
 const os = require('node:os');
 const path = require('node:path');
-const { conflictName } = require('./engine');
+
+// Name of the copy that keeps the local side of a conflict: "nota (conflito 2026-10-21 153005).md".
+function conflictName(rel, date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const stamp = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} `
+    + `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  const ext = path.posix.extname(rel);
+  return `${rel.slice(0, rel.length - ext.length)} (conflito ${stamp})${ext}`;
+}
 
 const NETWORK_TIMEOUT_MS = 120_000;
 const LOCAL_TIMEOUT_MS = 60_000;
@@ -132,10 +140,10 @@ function cleanEnv() {
 const splitZ = (buf) => buf.toString('utf8').split('\0').filter(Boolean);
 
 // Sync through a Git remote: the vault folder is the working tree. Every round commits what changed
-// here, merges what came from the remote and pushes. Like the S3 engine nothing is silently lost:
+// here, merges what came from the remote and pushes. Nothing is silently lost:
 // when both sides changed a file the remote version is kept next to ours as a "(conflito …)" copy.
 //
-// Same events as SyncEngine: 'status', 'local-changed' [paths], 'conflict' {path, copy}.
+// Events: 'status', 'local-changed' [paths], 'conflict' {path, copy}.
 class GitSync extends EventEmitter {
   // hooksDir: an empty folder owned by the app (git never runs hooks from the vault's .git).
   // allowFile: tests only (local bare repositories); skips URL validation.
@@ -488,4 +496,4 @@ class GitSync extends EventEmitter {
   }
 }
 
-module.exports = { GitSync, GitError, validateRemoteUrl, validateBranch, describeGitError, findGit };
+module.exports = { GitSync, GitError, validateRemoteUrl, validateBranch, describeGitError, findGit, conflictName };

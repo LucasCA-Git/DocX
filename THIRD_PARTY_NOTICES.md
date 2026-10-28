@@ -24,5 +24,4 @@ O DocX inclui os componentes abaixo, cada um sob a sua própria licença.
 ## Demais bibliotecas
 
 React e React DOM (MIT), CodeMirror (MIT), marked (MIT), DOMPurify (Apache-2.0 / MPL-2.0),
-KaTeX (MIT), Mermaid (MIT), d3-force (ISC), Lucide (ISC), AWS SDK for JavaScript (Apache-2.0) e
-Electron (MIT).
+KaTeX (MIT), Mermaid (MIT), d3-force (ISC), Lucide (ISC) e Electron (MIT).
