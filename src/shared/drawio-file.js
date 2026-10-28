@@ -70,4 +70,4 @@ function withDiagramXml(svgText, xml) {
   return svgText.slice(0, root.index) + tag + svgText.slice(root.index + root[0].length);
 }
 
-module.exports = { isDrawioPath, isDrawioSvg, diagramXmlFromFile, svgFromExportData, fallbackSvg, withDiagramXml };
+module.exports = { isDrawioPath, isDrawioSvg, unescapeXml, diagramXmlFromFile, svgFromExportData, fallbackSvg, withDiagramXml };

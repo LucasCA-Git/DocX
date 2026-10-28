@@ -9,8 +9,11 @@ const LINK_RE = /(!?)\[\[([^[\]\n]+?)\]\]/g;
 const FENCE_OPEN_RE = /^ {0,3}(`{3,}(?=[^`]*$)|~{3,})/;
 const FENCE_CLOSE_RE = /^ {0,3}(`{3,}|~{3,})\s*$/;
 const NOTE_RE = /\.(md|markdown)$/i;
+// Canvases, drawings and diagrams: not notes, but their links are indexed (see file-links.js).
+const BOARD_RE = /\.(canvas|excalidraw|drawio|drawio\.svg)$/i;
 
 const isNote = (rel) => NOTE_RE.test(rel);
+const isBoard = (rel) => BOARD_RE.test(rel);
 const dirOf = (rel) => rel.split('/').slice(0, -1).join('/');
 const blank = (text) => text.replace(/[^\n]/g, ' ');
 
@@ -190,6 +193,15 @@ class LinkIndex {
     this.graphCache = null;
   }
 
+  // Links already parsed elsewhere (a canvas, drawing or diagram); such files have no metadata.
+  updateLinks(rel, links) {
+    if (!this.fileSet.has(rel)) this.setFiles([...this.files, rel]);
+    this.raw.set(rel, links);
+    this.meta.delete(rel);
+    this.resolvedBySource.delete(rel);
+    this.graphCache = null;
+  }
+
   remove(rel) {
     this.setFiles(this.files.filter((f) => f !== rel));
   }
@@ -255,10 +267,10 @@ class LinkIndex {
     return [...seen.values()].sort();
   }
 
-  // Undirected graph: nodes {id, type: 'note'|'attachment'|'unresolved'}, edges {source, target}.
+  // Undirected graph: nodes {id, type: 'note'|'board'|'attachment'|'unresolved'}, edges {source, target}.
   graph({ includeUnresolved = false } = {}) {
     if (this.graphCache?.includeUnresolved === includeUnresolved) return this.graphCache.result;
-    const nodes = this.files.map((id) => ({ id, type: isNote(id) ? 'note' : 'attachment' }));
+    const nodes = this.files.map((id) => ({ id, type: isNote(id) ? 'note' : isBoard(id) ? 'board' : 'attachment' }));
     const unresolved = new Map();
     const edges = new Map();
     for (const [source, links] of this.resolved()) {
@@ -306,4 +318,4 @@ class LinkIndex {
   }
 }
 
-module.exports = { maskFences, parseLinks, linkAt, resolveLink, createLookup, LinkIndex, isNote };
+module.exports = { maskFences, parseLinks, linkAt, resolveLink, createLookup, LinkIndex, isNote, isBoard };

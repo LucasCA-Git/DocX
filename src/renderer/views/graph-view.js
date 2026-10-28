@@ -13,6 +13,7 @@ const LABEL_FADE = [0.55, 1.1];
 
 const COLORS = {
   note: '#a3a3a3',
+  board: '#c678dd',
   attachment: '#d9b23a',
   unresolved: '#5c5c5c',
   tag: '#4fb3a9',
@@ -28,6 +29,7 @@ const SPRITE_SIZE = 64;
 const SKY = {
   stars: makeStarfield(320, 2026),
   note: '#d6e4ff',
+  board: '#e0a8ff',
   attachment: '#ffd27a',
   unresolved: '#6b7393',
   tag: '#7ee0d4',

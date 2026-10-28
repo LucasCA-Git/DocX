@@ -12,7 +12,8 @@ const { parseQuery } = require('./search-query');
 
 const labelOf = (id, type) => {
   const base = id.split('/').pop();
-  return type === 'note' ? base.replace(/\.(md|markdown)$/i, '') : base;
+  if (type === 'note') return base.replace(/\.(md|markdown)$/i, '');
+  return type === 'board' ? base.replace(/\.(canvas|excalidraw|drawio\.svg|drawio)$/i, '') : base;
 };
 
 // A node test from a query in the search syntax, applied to file paths and tags only (fast enough
