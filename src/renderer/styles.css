@@ -766,23 +766,37 @@ body:not(.show-line-numbers).fold-gutter .editor-host .cm-editor { margin-left: 
 /* ---------- Claude (right sidebar) ---------- */
 body.is-right-sidebar-open.is-right-sidebar-wide { --right-sidebar-width: 400px; }
 .side-pane-claude { display: flex; padding: 0; overflow: hidden; }
-.claude-pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+body.is-right-sidebar-open.is-right-sidebar-wide.is-claude-history-open { --right-sidebar-width: min(600px, 50vw); }
+.claude-pane { flex: 1; min-width: 0; display: flex; }
+.claude-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.claude-history { width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px 6px; border-right: 1px solid var(--background-modifier-border); background: var(--background-secondary); min-height: 0; }
+.claude-history[hidden] { display: none; }
+.claude-history-new { display: flex; align-items: center; gap: 6px; justify-content: center; padding: 5px 8px; font-size: 12px; }
+.claude-history-search { width: 100%; font-size: 12px; padding: 4px 8px; }
+.claude-history-items { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-bottom: 30px; }
+.claude-chat-buttons { display: flex; flex-shrink: 0; }
+.claude-chat-rename { width: 100%; font-size: 12px; padding: 2px 4px; }
+.claude-chat-date .claude-dots { display: inline-block; width: 6px; height: 6px; margin-right: 4px; }
+.claude-fab { position: fixed; right: 20px; bottom: 44px; z-index: 40; width: 46px; height: 46px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--interactive-accent); color: #fff; box-shadow: 0 4px 14px rgb(0 0 0 / 0.35); cursor: pointer; }
+.claude-fab[hidden] { display: none; }
+.claude-fab:hover { filter: brightness(1.12); }
+.claude-fab-dot { position: absolute; top: 2px; right: 2px; width: 11px; height: 11px; border-radius: 50%; background: rgb(68 207 110); border: 2px solid var(--background-primary); display: none; }
+.claude-fab.has-news .claude-fab-dot { display: block; }
+.claude-fab.is-busy { animation: claude-fab-pulse 1.2s ease-in-out infinite; }
+@keyframes claude-fab-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / 0.6); } 50% { box-shadow: 0 0 0 10px rgb(var(--accent-rgb) / 0); } }
 .claude-header { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; border-bottom: 1px solid var(--background-modifier-border); }
 .claude-header .icon { color: var(--text-accent); }
 .claude-status { flex: 1; min-width: 0; color: var(--text-faint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .claude-status.is-error { color: var(--text-error); }
 .claude-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 12px; }
 .claude-header .clickable-icon.is-active { color: var(--text-accent); background: var(--background-modifier-hover); }
-.claude-chat-list { display: flex; flex-direction: column; gap: 4px; }
-.claude-chat-list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 6px; font-size: 13px; }
-.claude-chat-list-head button { padding: 3px 10px; font-size: 12px; }
-.claude-chat-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.claude-chat-item { display: flex; align-items: center; gap: 4px; padding: 5px 6px; border-radius: 6px; cursor: pointer; }
 .claude-chat-item:hover, .claude-chat-item:focus-visible { background: var(--background-modifier-hover); }
 .claude-chat-item.is-active { background: rgb(var(--accent-rgb) / 0.15); }
 .claude-chat-item .clickable-icon { opacity: 0; padding: 2px; }
 .claude-chat-item:hover .clickable-icon, .claude-chat-item:focus-within .clickable-icon { opacity: 1; }
 .claude-chat-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.claude-chat-title { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.claude-chat-title { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .claude-chat-date { font-size: 11px; color: var(--text-faint); }
 .claude-welcome { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
 .claude-welcome ol { padding-left: 18px; }

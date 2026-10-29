@@ -214,10 +214,13 @@ Como funciona:
   antes de cada pedido.
 - O Claude trabalha sempre na pasta do vault aberto (o seu repositório de documentos): "o repo",
   "a pasta" ou "minhas notas" se referem a ela.
-- A conversa continua entre mensagens e fica salva neste computador; **+** começa outra. O botão
-  🕘 lista as **conversas anteriores deste vault** (cada vault tem a sua lista): clique para voltar a
-  uma e continuar de onde parou, ou apague as que não quer mais. O botão de enviar vira **Parar**
-  enquanto ele responde.
+- A conversa continua entre mensagens e fica salva neste computador; **+** começa outra. À esquerda
+  do chat fica a coluna de **conversas deste vault** (cada vault tem a sua): busque pelo texto,
+  clique para voltar a uma e continuar de onde parou, renomeie (✏) ou apague (🗑). O botão no canto
+  do cabeçalho recolhe ou mostra a coluna. O botão de enviar vira **Parar** enquanto ele responde.
+- **—** minimiza o Claude: o painel some e fica uma bolha ✨ no canto inferior direito. Ela pulsa
+  enquanto ele responde e ganha um ponto verde quando a resposta fica pronta; um clique reabre o
+  chat como estava.
 - Em **⚙ Configurações › Claude**: o modelo (padrão do Claude Code, Opus, Sonnet ou Haiku) e, se a
   busca automática não achar, o comando (`wsl` ou o caminho completo do executável).
 

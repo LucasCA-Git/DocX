@@ -33,6 +33,8 @@ export const DEFAULT_PREFS = {
   monoFont: '',
   // Claude ('' = Claude Code's default model)
   claudeModel: '',
+  claudeHistoryOpen: true,
+  claudeMinimized: false,
 };
 
 // Settings tabs built from this list; `type` picks the control.

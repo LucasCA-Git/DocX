@@ -2,7 +2,7 @@ import {
   createElement,
   ArrowLeft, ArrowRight, ArrowUpRight, CircleHelp, FileDown, Group, LayoutDashboard, Link2, Maximize, Palette, Redo2, SquarePlus, StickyNote, Undo2, Pin, Rows2, Bookmark, Calendar, Bug, CircleCheck, Clipboard, Flame, Info, Quote, Zap, ArrowUpDown, Columns2, Copy, Folder, FolderInput, FolderOpen, ChevronDown, List, Tag, BookOpen, Check, ChevronRight, ChevronsDownUp, Cloud, CloudOff, EllipsisVertical,
   FilePlus, FileText, Files, FolderPlus, GitFork, History, Image, Link, PanelLeft, PanelRight, Pencil, Plus, RefreshCw, Search,
-  Settings, SquareTerminal, Trash2, TriangleAlert, X, ArrowRightLeft, PenTool, Workflow, Sparkles, SendHorizontal, CircleStop,
+  Settings, SquareTerminal, Trash2, TriangleAlert, X, ArrowRightLeft, PenTool, Workflow, Sparkles, SendHorizontal, CircleStop, Minus,
 } from 'lucide';
 
 const ICONS = {
@@ -67,6 +67,7 @@ const ICONS = {
   settings: Settings,
   sparkles: Sparkles,
   stop: CircleStop,
+  minus: Minus,
   switcher: ArrowRightLeft,
   terminal: SquareTerminal,
   trash: Trash2,

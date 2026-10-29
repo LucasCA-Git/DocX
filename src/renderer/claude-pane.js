@@ -33,15 +33,20 @@ function readJson(key) {
 // and proposes files and edits (see shared/claude-actions.js). Nothing is written until the user
 // clicks "Aplicar" on a proposal, after seeing its content or its diff.
 export class ClaudePane {
-  constructor({ workspace, store, openSettings }) {
+  // onMinimize/onRestore hide and show the panel; while it is hidden a floating button stays on
+  // screen, showing when Claude is answering or has finished.
+  constructor({ workspace, store, openSettings, onMinimize, onRestore }) {
     this.workspace = workspace;
     this.store = store;
     this.openSettings = openSettings;
+    this.onMinimize = onMinimize;
+    this.onRestore = onRestore;
     this.vaultPath = null;
     this.chats = [];
     this.chat = newChat();
-    // The list of conversations is showing instead of the current one.
-    this.showList = false;
+    this.minimized = prefs.get('claudeMinimized');
+    // An answer finished while the panel was minimized.
+    this.news = false;
     // The answer being written: { runId, message, chat }.
     this.run = null;
     this.views = new Map();
@@ -49,7 +54,13 @@ export class ClaudePane {
     this.bases = new WeakMap();
 
     this.statusEl = el('span', { class: 'claude-status' });
-    this.listBtn = iconButton('history', 'Conversas', () => this.toggleList());
+    this.historyBtn = iconButton('panel-left', 'Mostrar/ocultar conversas', () => this.toggleHistory());
+    this.searchInput = el('input', { type: 'search', class: 'claude-history-search', placeholder: 'Buscar conversas', 'aria-label': 'Buscar conversas' });
+    this.historyItems = el('div', { class: 'claude-history-items' });
+    this.historyEl = el('div', { class: 'claude-history' },
+      el('button', { class: 'claude-history-new', onclick: () => this.newChat() }, icon('plus', 14), el('span', { text: 'Nova conversa' })),
+      this.searchInput,
+      this.historyItems);
     this.list = el('div', { class: 'claude-messages' });
     this.contextEl = el('div', { class: 'claude-context' });
     this.input = el('textarea', {
@@ -60,13 +71,19 @@ export class ClaudePane {
     });
     this.sendBtn = iconButton('send', 'Enviar (Enter)', () => (this.run ? this.cancel() : this.send()), 'clickable-icon claude-send');
     this.el = el('div', { class: 'claude-pane' },
-      el('div', { class: 'claude-header' },
-        icon('sparkles', 16), el('strong', { text: 'Claude' }), this.statusEl,
-        this.listBtn,
-        iconButton('plus', 'Nova conversa', () => this.newChat()),
-        iconButton('settings', 'Configurações do Claude', () => this.openSettings())),
-      this.list,
-      el('div', { class: 'claude-composer' }, this.contextEl, el('div', { class: 'claude-input-row' }, this.input, this.sendBtn)));
+      this.historyEl,
+      el('div', { class: 'claude-main' },
+        el('div', { class: 'claude-header' },
+          this.historyBtn,
+          icon('sparkles', 16), el('strong', { text: 'Claude' }), this.statusEl,
+          iconButton('plus', 'Nova conversa', () => this.newChat()),
+          iconButton('minus', 'Minimizar', () => this.minimize()),
+          iconButton('settings', 'Configurações do Claude', () => this.openSettings())),
+        this.list,
+        el('div', { class: 'claude-composer' }, this.contextEl, el('div', { class: 'claude-input-row' }, this.input, this.sendBtn))));
+    this.bubble = el('button', { class: 'claude-fab', title: 'Abrir o Claude (Ctrl+Shift+L)', 'aria-label': 'Abrir o Claude', hidden: true, onclick: () => this.restore() },
+      icon('sparkles', 20), el('span', { class: 'claude-fab-dot' }));
+    document.body.append(this.bubble);
 
     this.input.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
@@ -75,17 +92,45 @@ export class ClaudePane {
       }
     });
     this.list.addEventListener('click', (event) => this.onLinkClick(event));
+    this.searchInput.addEventListener('input', () => this.renderHistory());
     api.onClaudeEvent((event) => this.onEvent(event));
     workspace.addEventListener('change', () => this.renderContext());
     // The saved conversation is drawn before the vault loads: its links resolve after the first load.
     store.addEventListener('change', () => this.run || this.renderAll(), { once: true });
     this.renderContext();
+    this.applyHistory();
     this.renderAll();
+    this.updateBubble();
     this.checkStatus();
   }
 
   onShow() {
+    this.minimized = false;
+    this.news = false;
+    prefs.set('claudeMinimized', false);
+    this.updateBubble();
     setTimeout(() => this.input.focus(), 0);
+  }
+
+  // ---------- minimize ----------
+
+  minimize() {
+    this.minimized = true;
+    prefs.set('claudeMinimized', true);
+    this.onMinimize();
+    this.updateBubble();
+  }
+
+  restore() {
+    // Showing the pane runs onShow, which hides the button.
+    this.onRestore();
+  }
+
+  updateBubble() {
+    this.bubble.hidden = !this.minimized;
+    this.bubble.classList.toggle('is-busy', Boolean(this.run));
+    this.bubble.classList.toggle('has-news', this.news && !this.run);
+    this.bubble.title = this.run ? 'O Claude está respondendo… (clique para abrir)' : this.news ? 'O Claude respondeu (clique para abrir)' : 'Abrir o Claude (Ctrl+Shift+L)';
   }
 
   async checkStatus() {
@@ -109,7 +154,6 @@ export class ClaudePane {
     const { current, chats } = vaultPath ? loadChats(readJson(STORAGE_PREFIX + vaultPath), legacy) : { current: null, chats: [] };
     this.chats = chats;
     this.chat = chats.find((c) => c.id === current) ?? newChat();
-    this.showList = false;
     if (legacy && this.save()) {
       try {
         localStorage.removeItem(LEGACY_KEY);
@@ -117,10 +161,12 @@ export class ClaudePane {
         // Read again next time; it is already in this vault's list.
       }
     }
+    this.renderHistory();
     this.renderAll();
   }
 
   save() {
+    this.renderHistory();
     if (!this.vaultPath) return false;
     try {
       localStorage.setItem(STORAGE_PREFIX + this.vaultPath, JSON.stringify(serializeChats(this.chat.id, this.chats)));
@@ -141,7 +187,6 @@ export class ClaudePane {
   newChat() {
     this.stopRun();
     this.chat = newChat();
-    this.showList = false;
     this.save();
     this.renderAll();
     this.input.focus();
@@ -153,7 +198,6 @@ export class ClaudePane {
       this.chat = chat;
       this.save();
     }
-    this.showList = false;
     this.renderAll();
     this.input.focus();
   }
@@ -168,9 +212,76 @@ export class ClaudePane {
     this.renderAll();
   }
 
-  toggleList() {
-    this.showList = !this.showList;
-    this.renderAll();
+  // ---------- conversation list ----------
+
+  toggleHistory(open = !prefs.get('claudeHistoryOpen')) {
+    prefs.set('claudeHistoryOpen', open);
+    this.applyHistory();
+    if (open) this.searchInput.focus();
+  }
+
+  applyHistory() {
+    const open = prefs.get('claudeHistoryOpen');
+    this.historyEl.hidden = !open;
+    this.historyBtn.classList.toggle('is-active', open);
+    // The sidebar widens to fit the column (styles.css).
+    document.body.classList.toggle('is-claude-history-open', open);
+  }
+
+  renderHistory() {
+    const query = this.searchInput.value.trim().toLowerCase();
+    const matches = (chat) => !query || chat.title.toLowerCase().includes(query) || chat.messages.some((m) => m.text.toLowerCase().includes(query));
+    const chats = this.chats.filter((c) => c.id && matches(c)).sort((a, b) => b.updated - a.updated);
+    this.historyItems.replaceChildren(...(chats.length ? chats.map((chat) => this.historyItem(chat))
+      : [el('p', { class: 'pane-empty', text: query ? 'Nenhuma conversa encontrada.' : 'As conversas deste vault aparecem aqui.' })]));
+  }
+
+  historyItem(chat) {
+    const title = el('span', { class: 'claude-chat-title', text: chat.title, title: chat.title });
+    const item = el('div', {
+      class: `claude-chat-item${chat === this.chat ? ' is-active' : ''}`,
+      role: 'button',
+      tabindex: '0',
+      onclick: () => this.openChat(chat),
+      onkeydown: (event) => {
+        if (event.key === 'Enter' && event.target === item) this.openChat(chat);
+      },
+    },
+    el('div', { class: 'claude-chat-text' },
+      title,
+      el('span', { class: 'claude-chat-date' }, this.run?.chat === chat ? el('span', { class: 'claude-dots' }) : null, formatDate(chat.updated))),
+    el('div', { class: 'claude-chat-buttons' },
+      iconButton('pencil', 'Renomear', (event) => {
+        event.stopPropagation();
+        this.renameChat(chat, title);
+      }),
+      iconButton('trash', 'Apagar conversa', (event) => {
+        event.stopPropagation();
+        this.deleteChat(chat);
+      })));
+    return item;
+  }
+
+  renameChat(chat, titleEl) {
+    const input = el('input', { type: 'text', class: 'claude-chat-rename', value: chat.title, 'aria-label': 'Nome da conversa' });
+    let done = false;
+    const finish = (keep) => {
+      if (done) return;
+      done = true;
+      const name = input.value.trim();
+      if (keep && name) chat.title = name;
+      this.save();
+    };
+    input.addEventListener('click', (event) => event.stopPropagation());
+    input.addEventListener('keydown', (event) => {
+      event.stopPropagation();
+      if (event.key === 'Enter') finish(true);
+      else if (event.key === 'Escape') finish(false);
+    });
+    input.addEventListener('blur', () => finish(true));
+    titleEl.replaceWith(input);
+    input.focus();
+    input.select();
   }
 
   renderContext() {
@@ -206,7 +317,6 @@ export class ClaudePane {
     chat.updated = Date.now();
     const run = { runId: crypto.randomUUID(), message, chat };
     this.run = run;
-    this.showList = false;
     this.save();
     this.renderAll();
     this.setBusy(true);
@@ -225,6 +335,7 @@ export class ClaudePane {
     this.sendBtn.replaceChildren(icon(busy ? 'stop' : 'send'));
     this.sendBtn.title = busy ? 'Parar' : 'Enviar (Enter)';
     this.sendBtn.setAttribute('aria-label', this.sendBtn.title);
+    this.updateBubble();
   }
 
   onEvent(event) {
@@ -265,6 +376,7 @@ export class ClaudePane {
     }
     if (this.run === run) {
       this.run = null;
+      if (this.minimized && !cancelled) this.news = true;
       this.setBusy(false);
     }
     chat.updated = Date.now();
@@ -284,12 +396,6 @@ export class ClaudePane {
 
   renderAll() {
     this.views.clear();
-    this.listBtn.classList.toggle('is-active', this.showList);
-    if (this.showList) {
-      this.list.replaceChildren(this.chatList());
-      this.list.scrollTop = 0;
-      return;
-    }
     const nodes = [];
     if (this.status && !this.status.found) nodes.push(this.setupHelp());
     else if (!this.chat.messages.length) nodes.push(this.welcome());
@@ -302,36 +408,12 @@ export class ClaudePane {
     const old = this.views.get(message);
     if (!old) {
       // Drawn only when it is on screen.
-      if (!this.showList && this.chat.messages.includes(message)) this.renderAll();
+      if (this.chat.messages.includes(message)) this.renderAll();
       return;
     }
     const atBottom = this.list.scrollHeight - this.list.scrollTop - this.list.clientHeight < 40;
     old.replaceWith(this.messageNode(message));
     if (atBottom) this.list.scrollTop = this.list.scrollHeight;
-  }
-
-  chatList() {
-    const items = this.chats.map((chat) => el('div', {
-      class: `claude-chat-item${chat === this.chat ? ' is-active' : ''}`,
-      role: 'button',
-      tabindex: '0',
-      onclick: () => this.openChat(chat),
-      onkeydown: (event) => {
-        if (event.key === 'Enter') this.openChat(chat);
-      },
-    },
-    el('div', { class: 'claude-chat-text' },
-      el('span', { class: 'claude-chat-title', text: chat.title, title: chat.title }),
-      el('span', { class: 'claude-chat-date', text: `${formatDate(chat.updated)} · ${chat.messages.filter((m) => m.role === 'user').length} pergunta(s)` })),
-    iconButton('trash', 'Apagar conversa', (event) => {
-      event.stopPropagation();
-      this.deleteChat(chat);
-    })));
-    return el('div', { class: 'claude-chat-list' },
-      el('div', { class: 'claude-chat-list-head' },
-        el('strong', { text: 'Conversas neste vault' }),
-        el('button', { class: 'mod-cta', text: 'Nova conversa', onclick: () => this.newChat() })),
-      items.length ? items : el('p', { class: 'pane-empty', text: 'Nenhuma conversa ainda. As conversas ficam guardadas aqui, separadas por vault.' }));
   }
 
   welcome() {
