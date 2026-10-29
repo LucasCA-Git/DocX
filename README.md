@@ -212,8 +212,12 @@ Como funciona:
   tem **Aplicar** e **Descartar**; com várias, há **Aplicar todas**. Não há como apagar nem renomear.
 - "Esta nota" é a nota aberta: o painel informa ao Claude qual é. Textos não salvos são gravados
   antes de cada pedido.
-- A conversa continua entre mensagens e fica salva neste computador; **+** começa outra. O botão de
-  enviar vira **Parar** enquanto ele responde.
+- O Claude trabalha sempre na pasta do vault aberto (o seu repositório de documentos): "o repo",
+  "a pasta" ou "minhas notas" se referem a ela.
+- A conversa continua entre mensagens e fica salva neste computador; **+** começa outra. O botão
+  🕘 lista as **conversas anteriores deste vault** (cada vault tem a sua lista): clique para voltar a
+  uma e continuar de onde parou, ou apague as que não quer mais. O botão de enviar vira **Parar**
+  enquanto ele responde.
 - Em **⚙ Configurações › Claude**: o modelo (padrão do Claude Code, Opus, Sonnet ou Haiku) e, se a
   busca automática não achar, o comando (`wsl` ou o caminho completo do executável).
 

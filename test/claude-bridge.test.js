@@ -80,7 +80,10 @@ process.stdin.on('end', () => {
   assert.equal(seen.input, 'crie uma nota');
   assert.equal(fs.realpathSync(seen.cwd), fs.realpathSync(vault));
   assert.ok(seen.args.includes('--system-prompt-file'));
-  assert.match(fs.readFileSync(seen.args[seen.args.indexOf('--system-prompt-file') + 1], 'utf8'), /docx-action/);
+  const prompt = fs.readFileSync(seen.args[seen.args.indexOf('--system-prompt-file') + 1], 'utf8');
+  assert.match(prompt, /docx-action/);
+  // The conversation is about this vault's folder.
+  assert.ok(prompt.includes(`"${path.basename(vault)}" (${vault})`));
   assert.equal((await bridge.locate('')).command, claude);
 });
 

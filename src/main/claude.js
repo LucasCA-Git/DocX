@@ -66,6 +66,16 @@ Regras:
 - Responda no idioma do usuário (normalmente português do Brasil), de forma direta e curta. Explique em uma ou duas frases o que está propondo.
 - A mensagem do usuário pode terminar com "[DocX] Nota aberta agora: caminho". É a nota na tela; "esta nota" se refere a ela.`;
 
+// The fixed instructions plus which folder this conversation is about.
+function systemPrompt(vaultDir) {
+  const name = vaultDir.split(/[\\/]/).filter(Boolean).pop() ?? vaultDir;
+  return `${SYSTEM_PROMPT}
+
+# Este vault
+- A pasta do vault é "${name}" (${vaultDir}): é o repositório de documentos do usuário e a pasta atual. Quando ele falar em "repo", "repositório", "pasta", "projeto", "documentos" ou "minhas notas", é desta pasta que está falando.
+- Responda sempre a partir do conteúdo deste vault: procure nele antes de responder e cite as notas com [[links]]. Não fale de outros projetos ou pastas do computador.`;
+}
+
 // C:\Users\x -> /mnt/c/Users/x (WSL's default mount of Windows drives).
 function winToWsl(p) {
   const m = /^([a-z]):[\\/]?(.*)$/i.exec(p);
@@ -221,7 +231,7 @@ class ClaudeBridge {
     const dir = path.join(this.userDataDir, 'claude');
     fs.mkdirSync(dir, { recursive: true });
     const promptFile = path.join(dir, 'system-prompt.md');
-    fs.writeFileSync(promptFile, SYSTEM_PROMPT);
+    fs.writeFileSync(promptFile, systemPrompt(found.via === 'wsl' ? (winToWsl(vaultRoot) ?? vaultRoot) : vaultRoot));
 
     let command;
     let args;
@@ -312,4 +322,4 @@ class ClaudeBridge {
   }
 }
 
-module.exports = { ClaudeBridge, buildArgs, streamEvents, validateRequest, winToWsl, SYSTEM_PROMPT };
+module.exports = { ClaudeBridge, buildArgs, streamEvents, validateRequest, winToWsl, systemPrompt, SYSTEM_PROMPT };

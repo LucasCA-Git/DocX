@@ -772,6 +772,18 @@ body.is-right-sidebar-open.is-right-sidebar-wide { --right-sidebar-width: 400px;
 .claude-status { flex: 1; min-width: 0; color: var(--text-faint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .claude-status.is-error { color: var(--text-error); }
 .claude-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 12px; }
+.claude-header .clickable-icon.is-active { color: var(--text-accent); background: var(--background-modifier-hover); }
+.claude-chat-list { display: flex; flex-direction: column; gap: 4px; }
+.claude-chat-list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 6px; font-size: 13px; }
+.claude-chat-list-head button { padding: 3px 10px; font-size: 12px; }
+.claude-chat-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.claude-chat-item:hover, .claude-chat-item:focus-visible { background: var(--background-modifier-hover); }
+.claude-chat-item.is-active { background: rgb(var(--accent-rgb) / 0.15); }
+.claude-chat-item .clickable-icon { opacity: 0; padding: 2px; }
+.claude-chat-item:hover .clickable-icon, .claude-chat-item:focus-within .clickable-icon { opacity: 1; }
+.claude-chat-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.claude-chat-title { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.claude-chat-date { font-size: 11px; color: var(--text-faint); }
 .claude-welcome { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
 .claude-welcome ol { padding-left: 18px; }
 .claude-hint { color: var(--text-faint); }

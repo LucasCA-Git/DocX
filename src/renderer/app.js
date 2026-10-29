@@ -45,6 +45,7 @@ const openSettings = setupSettings({
   beforeSave: () => workspace.saveAll(),
   onSaved: async (cfg) => {
     $('#vault-name').textContent = vaultName(cfg);
+    claude.setVault(cfg.vaultPath);
     await store.refresh();
     workspace.reset();
   },
@@ -80,6 +81,7 @@ const syncNow = () => api.syncNow().catch((err) => notice(err, { error: true }))
   { id: 'localgraph:open', name: 'Mostrar grafo local', run: () => rightSidebar.showTab('graph') },
   { id: 'claude:open', name: 'Conversar com o Claude', hotkeys: ['Mod+Shift+L'], run: () => rightSidebar.showTab('claude') },
   { id: 'claude:new', name: 'Claude: nova conversa', run: () => { rightSidebar.showTab('claude'); claude.newChat(); } },
+  { id: 'claude:chats', name: 'Claude: conversas anteriores', run: () => { rightSidebar.showTab('claude'); if (!claude.showList) claude.toggleList(); } },
   { id: 'app:toggle-right-sidebar', name: 'Recolher/expandir barra lateral direita', hotkeys: ['Mod+Shift+B'], run: () => rightSidebar.toggle() },
   { id: 'file:new', name: 'Nova nota', hotkeys: ['Mod+N'], run: () => workspace.createNote() },
   { id: 'file:new-folder', name: 'Nova pasta', run: () => explorer.newFolder() },
@@ -226,6 +228,7 @@ api.onVaultChanged(async (paths) => {
     return;
   }
   $('#vault-name').textContent = vaultName(cfg);
+  claude.setVault(cfg.vaultPath);
   await store.refresh();
   workspace.restore();
   if (prefs.get('dailyOnStart')) openDailyNote({ workspace, store });
