@@ -31,6 +31,8 @@ export const DEFAULT_PREFS = {
   uiFontSize: 14,
   textFont: '',
   monoFont: '',
+  // Claude ('' = Claude Code's default model)
+  claudeModel: '',
 };
 
 // Settings tabs built from this list; `type` picks the control.

@@ -10,6 +10,8 @@ const DEFAULTS = {
   syncProvider: 'git',
   gitUrl: '',
   gitBranch: 'main',
+  // Claude Code to run for the assistant: '' finds it, 'wsl' uses the one inside WSL, or a full path.
+  claudeCommand: '',
 };
 
 const PROVIDERS = ['git', 'none'];
@@ -23,11 +25,17 @@ function normalize(input) {
     syncProvider: pick('syncProvider'),
     gitUrl: pick('gitUrl'),
     gitBranch: pick('gitBranch') || DEFAULTS.gitBranch,
+    claudeCommand: pick('claudeCommand'),
   };
   if (cfg.vaultPath && !path.isAbsolute(cfg.vaultPath)) throw new Error('A pasta do vault precisa ser um caminho absoluto');
   if (!PROVIDERS.includes(cfg.syncProvider)) throw new Error('Tipo de sincronização inválido');
   if (cfg.gitUrl) validateRemoteUrl(cfg.gitUrl);
   validateBranch(cfg.gitBranch);
+  // Only a Claude Code executable: the setting must not become a way to run any program.
+  if (cfg.claudeCommand && cfg.claudeCommand !== 'wsl'
+    && !(path.isAbsolute(cfg.claudeCommand) && /^claude(\.exe)?$/i.test(path.basename(cfg.claudeCommand)))) {
+    throw new Error('O comando do Claude Code precisa ser "wsl" ou o caminho completo do executável claude');
+  }
   return cfg;
 }
 

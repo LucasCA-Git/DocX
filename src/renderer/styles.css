@@ -762,3 +762,44 @@ body:not(.show-line-numbers).fold-gutter .editor-host .cm-editor { margin-left: 
 .drawio-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: var(--background-primary); }
 .drawing-embed-body { padding: 8px; color: var(--text-muted); }
 .drawing-embed-body img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+
+/* ---------- Claude (right sidebar) ---------- */
+body.is-right-sidebar-open.is-right-sidebar-wide { --right-sidebar-width: 400px; }
+.side-pane-claude { display: flex; padding: 0; overflow: hidden; }
+.claude-pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.claude-header { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; border-bottom: 1px solid var(--background-modifier-border); }
+.claude-header .icon { color: var(--text-accent); }
+.claude-status { flex: 1; min-width: 0; color: var(--text-faint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.claude-status.is-error { color: var(--text-error); }
+.claude-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 12px; }
+.claude-welcome { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.claude-welcome ol { padding-left: 18px; }
+.claude-hint { color: var(--text-faint); }
+.claude-msg.is-user { align-self: flex-end; max-width: 90%; }
+.claude-bubble { background: rgb(var(--accent-rgb) / 0.18); border-radius: 10px 10px 2px 10px; padding: 6px 10px; white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+.claude-msg.is-assistant { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.claude-text { font-size: 13px; line-height: 1.55; word-break: break-word; }
+.claude-text > :first-child { margin-top: 0; }
+.claude-text > :last-child { margin-bottom: 0; }
+.claude-activity { display: flex; align-items: center; gap: 6px; color: var(--text-faint); font-size: 12px; }
+.claude-dots { width: 8px; height: 8px; border-radius: 50%; background: var(--interactive-accent); animation: claude-pulse 1s ease-in-out infinite alternate; }
+@keyframes claude-pulse { from { opacity: 0.25; } to { opacity: 1; } }
+.claude-action { border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 8px; background: var(--background-secondary); }
+.claude-action.is-applied { border-color: rgb(68 207 110 / 0.5); }
+.claude-action.is-discarded { opacity: 0.6; }
+.claude-action.is-invalid { flex-direction: row; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12px; }
+.claude-action-title { display: flex; align-items: center; gap: 6px; font-size: 12px; min-width: 0; }
+.claude-action-title strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.claude-action-title .clickable-icon { padding: 2px; }
+.claude-preview { max-height: 260px; overflow: auto; border-radius: 4px; background: var(--background-primary); padding: 6px; }
+.claude-preview .history-diff { font-size: 12px; }
+.claude-action-buttons { display: flex; align-items: center; gap: 6px; }
+.claude-action-buttons button { padding: 3px 10px; font-size: 12px; }
+.claude-done { color: var(--text-muted); font-size: 12px; margin-right: auto; }
+.claude-apply-all { justify-content: flex-start; }
+.claude-composer { border-top: 1px solid var(--background-modifier-border); padding: 8px 8px 36px; display: flex; flex-direction: column; gap: 4px; }
+.claude-context { display: flex; align-items: center; gap: 4px; color: var(--text-faint); font-size: 11px; min-height: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.claude-input-row { display: flex; align-items: flex-end; gap: 6px; }
+.claude-input { flex: 1; resize: none; min-height: 56px; max-height: 200px; font: inherit; font-size: 13px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); color: var(--text-normal); }
+.claude-input:focus { outline: none; border-color: var(--interactive-accent); }
+.claude-send { color: var(--text-accent); }

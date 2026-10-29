@@ -9,6 +9,7 @@ import { notice, renderSyncStatus } from './status';
 import { commands } from './commands';
 import { openCommandPalette, openQuickSwitcher } from './switcher';
 import { hotkeysSection } from './hotkeys-settings';
+import { ClaudePane, claudeSection } from './claude-pane';
 import { setupHoverPreview } from './hover-preview';
 import { EDITOR_COMMANDS } from './editor-setup';
 import { setupAppearance } from './appearance';
@@ -40,7 +41,7 @@ workspace.addEventListener('change', () => explorer.render());
 const vaultName = (cfg) => cfg.vaultPath.split(/[\\/]/).filter(Boolean).pop() || 'DocX';
 
 const openSettings = setupSettings({
-  extraSections: [hotkeysSection],
+  extraSections: [hotkeysSection, claudeSection],
   beforeSave: () => workspace.saveAll(),
   onSaved: async (cfg) => {
     $('#vault-name').textContent = vaultName(cfg);
@@ -48,6 +49,9 @@ const openSettings = setupSettings({
     workspace.reset();
   },
 });
+
+const claude = new ClaudePane({ store, workspace, openSettings: () => openSettings('claude') });
+rightSidebar.addPane({ id: 'claude', icon: 'sparkles', title: 'Claude (Ctrl+Shift+L)', render: null, el: claude.el, wide: true, onShow: () => claude.onShow() });
 
 // ---------- commands ----------
 
@@ -74,6 +78,8 @@ const syncNow = () => api.syncNow().catch((err) => notice(err, { error: true }))
   { id: 'outgoing:open', name: 'Mostrar links de saída', run: () => rightSidebar.showTab('outgoing') },
   { id: 'tags:open', name: 'Mostrar tags', run: () => rightSidebar.showTab('tags') },
   { id: 'localgraph:open', name: 'Mostrar grafo local', run: () => rightSidebar.showTab('graph') },
+  { id: 'claude:open', name: 'Conversar com o Claude', hotkeys: ['Mod+Shift+L'], run: () => rightSidebar.showTab('claude') },
+  { id: 'claude:new', name: 'Claude: nova conversa', run: () => { rightSidebar.showTab('claude'); claude.newChat(); } },
   { id: 'app:toggle-right-sidebar', name: 'Recolher/expandir barra lateral direita', hotkeys: ['Mod+Shift+B'], run: () => rightSidebar.toggle() },
   { id: 'file:new', name: 'Nova nota', hotkeys: ['Mod+N'], run: () => workspace.createNote() },
   { id: 'file:new-folder', name: 'Nova pasta', run: () => explorer.newFolder() },
@@ -153,6 +159,7 @@ $('#ribbon-actions').append(
   iconButton('canvas', 'Novo canvas', run('canvas:new')),
   iconButton('pen-tool', 'Novo desenho', run('drawing:new')),
   iconButton('workflow', 'Novo diagrama', run('diagram:new')),
+  iconButton('sparkles', 'Conversar com o Claude (Ctrl+Shift+L)', run('claude:open')),
   iconButton('terminal', 'Abrir paleta de comandos (Ctrl+P)', run('app:command-palette')),
   iconButton('refresh', 'Sincronizar agora', syncNow),
 );

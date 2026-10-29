@@ -39,8 +39,11 @@ export class RightSidebar {
   }
 
   // pane: { id, icon, title, render(host) } — render is called whenever the note or vault changed.
+  // A pane that keeps its own content gives `el` instead (mounted once, render: null); `wide`
+  // widens the sidebar while it is shown, `onShow` runs each time it comes on screen.
   addPane(pane) {
     const host = el('div', { class: `side-pane side-pane-${pane.id}` });
+    if (pane.el) host.append(pane.el);
     const button = iconButton(pane.icon, pane.title, () => this.showTab(pane.id));
     this.panes.set(pane.id, { ...pane, host, button });
     this.tabsEl.append(button);
@@ -71,6 +74,8 @@ export class RightSidebar {
     if (!this.panes.has(this.state.tab)) this.state.tab = 'backlinks';
     this.save();
     document.body.classList.toggle('is-right-sidebar-open', this.state.open);
+    const shown = this.state.open ? this.panes.get(this.state.tab) : null;
+    document.body.classList.toggle('is-right-sidebar-wide', Boolean(shown?.wide));
     for (const [id, pane] of this.panes) {
       pane.button.classList.toggle('is-active', id === this.state.tab);
       pane.host.hidden = id !== this.state.tab;
@@ -86,6 +91,7 @@ export class RightSidebar {
       this.graph = null;
     }
     this.graph?.onShow();
+    shown?.onShow?.();
     this.render();
   }
 

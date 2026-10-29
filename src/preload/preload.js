@@ -35,4 +35,9 @@ contextBridge.exposeInMainWorld('docs', {
   closeReady: () => ipcRenderer.invoke('app:close-ready'),
   exportPdf: (html, title) => ipcRenderer.invoke('note:export-pdf', html, title),
   setTitleBarColors: (colors) => ipcRenderer.invoke('app:titlebar', colors),
+  claudeStatus: () => ipcRenderer.invoke('claude:status'),
+  claudeSetCommand: (command) => ipcRenderer.invoke('claude:set-command', command),
+  claudeAsk: (runId, request) => ipcRenderer.invoke('claude:ask', runId, request),
+  claudeCancel: (runId) => ipcRenderer.invoke('claude:cancel', runId),
+  onClaudeEvent: (cb) => subscribe('claude:event', cb),
 });

@@ -12,6 +12,7 @@ const { Readable } = require('node:stream');
 const { ASSET_SCHEME } = require('../shared/asset-url');
 const { migrateUserData } = require('./migrate');
 const { DRAWIO_SCHEME, DRAWIO_ORIGIN, resolveDrawioFile, drawioHeaders } = require('./drawio-protocol');
+const { ClaudeBridge } = require('./claude');
 
 const os = require('node:os');
 
@@ -31,6 +32,7 @@ let syncTimer = null;
 let lastStatus = { state: 'disabled' };
 const pendingPaths = new Set();
 let watchTimer = null;
+let claude = null;
 
 function send(channel, payload) {
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
@@ -134,7 +136,9 @@ function registerIpc() {
   const publicConfig = () => ({ ...config, gitConfigured: isGitConfigured(config) });
   handle('config:get', publicConfig);
   handle('config:save', async (input) => {
-    config = configStore.save(input);
+    // The form sends only its own fields; Claude Code's command changes only through claude:set-command.
+    const { claudeCommand, ...fields } = input ?? {};
+    config = configStore.save({ ...config, ...fields });
     await openVault();
     return publicConfig();
   });
@@ -190,6 +194,21 @@ function registerIpc() {
   handle('history:read', async (sha, rel) => {
     const body = await requireGit().showFile(requireString(sha, 'Versão'), requireString(rel, 'Caminho'));
     return body === null ? null : body.toString('utf8');
+  });
+  handle('claude:status', async () => {
+    const found = await claude.locate(config.claudeCommand);
+    return { found: Boolean(found), via: found?.via ?? null, command: found ? (found.claude ?? found.command) : null, override: config.claudeCommand };
+  });
+  handle('claude:set-command', (command) => {
+    config = configStore.save({ ...config, claudeCommand: requireString(command, 'Comando') });
+    claude.reset();
+  });
+  handle('claude:ask', async (runId, request) => {
+    requireString(runId, 'Pedido');
+    await claude.ask(runId, request, { vaultRoot: requireVault().root, override: config.claudeCommand }, (event) => send('claude:event', { runId, ...event }));
+  });
+  handle('claude:cancel', (runId) => {
+    claude.cancel(requireString(runId, 'Pedido'));
   });
   handle('note:export-pdf', (html, title) => exportPdf(requireString(html, 'Conteúdo'), requireString(title, 'Título')));
   handle('app:titlebar', (colors) => {
@@ -402,6 +421,7 @@ app.whenReady().then(async () => {
   }
   configStore = new ConfigStore(app.getPath('userData'));
   config = configStore.load();
+  claude = new ClaudeBridge({ userDataDir: app.getPath('userData') });
   registerIpc();
   createWindow();
   try {
@@ -411,7 +431,10 @@ app.whenReady().then(async () => {
   }
 });
 
+app.on('before-quit', () => claude?.cancelAll());
+
 app.on('window-all-closed', () => {
+  claude?.cancelAll();
   closeVault();
   app.quit();
 });

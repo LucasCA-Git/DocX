@@ -85,10 +85,37 @@ class Vault {
     return { files: files.sort(), folders: folders.sort(), ...(times ? { times } : {}) };
   }
 
+  // resolve() checks the path as text; a symlinked folder inside the vault (one a cloned repo can
+  // bring) could still lead a write elsewhere. The nearest existing folder must really be inside.
+  async assertRealInside(full) {
+    let root;
+    try {
+      root = await fsp.realpath(this.root);
+    } catch (err) {
+      // A vault folder not created yet holds no links.
+      if (err.code === 'ENOENT') return;
+      throw err;
+    }
+    let dir = path.dirname(full);
+    for (;;) {
+      let real;
+      try {
+        real = await fsp.realpath(dir);
+      } catch (err) {
+        if (err.code !== 'ENOENT' || path.dirname(dir) === dir) throw err;
+        dir = path.dirname(dir);
+        continue;
+      }
+      if (real !== root && !real.startsWith(root + path.sep)) throw new Error('Caminho fora do vault');
+      return;
+    }
+  }
+
   async mkdir(rel) {
     const full = this.resolve(rel);
     assertVisible(rel);
     if (fs.existsSync(full)) throw new Error(`"${rel}" já existe`);
+    await this.assertRealInside(full);
     await fsp.mkdir(full, { recursive: true });
   }
 
@@ -163,6 +190,7 @@ class Vault {
   // Atomic write (temp dotfile + rename) so a crash never leaves a half-written note.
   async write(rel, data) {
     const full = this.resolve(rel);
+    await this.assertRealInside(full);
     const dir = path.dirname(full);
     await fsp.mkdir(dir, { recursive: true });
     const tmp = path.join(dir, `.${path.basename(full)}.${process.pid}-${++tmpCounter}.docs-tmp`);

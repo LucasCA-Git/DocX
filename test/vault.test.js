@@ -96,3 +96,15 @@ test('vault rejects paths outside its folder', async () => {
   assert.throws(() => vault.resolve('../fora.md'), /fora do vault/);
   assert.throws(() => vault.resolve(''), /inválido/);
 });
+
+test('writes never follow a symlinked folder out of the vault', { skip: process.platform === 'win32' }, async () => {
+  const vault = await tempVault();
+  const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'docs-outside-'));
+  await fs.symlink(outside, path.join(vault.root, 'Notas'));
+  await assert.rejects(vault.write('Notas/x.md', 'oi'), /fora do vault/);
+  await assert.rejects(vault.create('Notas/sub/y.md', 'oi'), /fora do vault/);
+  await assert.rejects(vault.mkdir('Notas/pasta'), /fora do vault/);
+  assert.deepEqual(await fs.readdir(outside), []);
+  await vault.write('Dentro/z.md', 'ok');
+  assert.equal(await fs.readFile(path.join(vault.root, 'Dentro/z.md'), 'utf8'), 'ok');
+});

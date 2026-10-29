@@ -42,3 +42,13 @@ test('S3 configs from older versions turn sync off and drop the S3 fields', () =
   write({ vaultPath: base.vaultPath });
   assert.equal(new ConfigStore(dir).load().syncProvider, 'git');
 });
+
+test('claudeCommand accepts only "wsl" or a claude executable path', () => {
+  const base = { vaultPath: path.resolve('/tmp/v'), syncProvider: 'none' };
+  assert.equal(normalize({ ...base }).claudeCommand, '');
+  assert.equal(normalize({ ...base, claudeCommand: 'wsl' }).claudeCommand, 'wsl');
+  assert.equal(normalize({ ...base, claudeCommand: path.resolve('/opt/bin/claude') }).claudeCommand, path.resolve('/opt/bin/claude'));
+  for (const bad of ['claude', path.resolve('/bin/sh'), path.resolve('/tmp/claude.sh'), path.resolve('/tmp/vault/evil.exe')]) {
+    assert.throws(() => normalize({ ...base, claudeCommand: bad }), /Claude Code/, bad);
+  }
+});

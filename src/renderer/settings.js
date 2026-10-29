@@ -124,7 +124,7 @@ export function setupSettings({ beforeSave, onSaved, extraSections = [] }) {
   };
 }
 
-function settingRow(label, desc, control) {
+export function settingRow(label, desc, control) {
   return el('div', { class: 'setting-item' },
     el('div', { class: 'setting-info' },
       el('div', { class: 'setting-name', text: label }),

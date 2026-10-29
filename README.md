@@ -34,6 +34,7 @@ histórico de versões.
 - [Recursos](#recursos)
 - [Instalação](#instalação)
 - [Desenhos e diagramas](#desenhos-e-diagramas)
+- [Assistente Claude](#assistente-claude)
 - [Primeiros passos](#primeiros-passos)
 - [Sincronização com Git](#sincronização-com-git-padrão)
 - [Escrevendo notas](#escrevendo-notas)
@@ -99,6 +100,12 @@ histórico de versões.
   no GitHub, e continua editável. Arquivos `.drawio` também abrem.
 - Os dois funcionam offline, salvam sozinhos e sincronizam pelo Git como qualquer nota.
 - Na nota, `![[Desenho.excalidraw]]` e `![[Fluxo.drawio.svg]]` mostram a imagem.
+
+**Assistente Claude**
+- Painel de conversa na barra lateral direita (`Ctrl+Shift+L`): peça um documento, um resumo das
+  suas notas, uma revisão da nota aberta, um canvas ou um diagrama. O Claude lê o vault e **propõe**
+  os arquivos; nada é gravado sem você clicar em **Aplicar**, depois de ver o conteúdo ou o diff.
+  Veja [Assistente Claude](#assistente-claude).
 
 **Aparência e saída**
 - Tema escuro, claro ou do sistema, cor de destaque, tamanho de fonte e fontes de texto e código.
@@ -186,6 +193,30 @@ Dicas:
 - Os editores rodam isolados e não acessam a internet: bibliotecas online do Excalidraw e
   integrações de nuvem do draw.io ficam desligadas.
 
+## Assistente Claude
+
+O DocX conversa com o **Claude Code instalado no seu computador**, usando o login e a assinatura da
+sua conta do Claude. Não há chave de API para configurar.
+
+1. Instale o [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) — no próprio
+   Windows ou dentro do WSL (o DocX procura nos dois) — ou no Linux.
+2. Abra um terminal, rode `claude` uma vez e entre com a sua conta.
+3. No DocX, clique em ✨ na barra da esquerda ou aperte `Ctrl+Shift+L`.
+
+Como funciona:
+- O Claude **só lê**: ele procura e lê arquivos dentro do vault, e nada fora dele. Não roda
+  comandos, não acessa a internet e não carrega plugins, hooks, servidores MCP nem o `CLAUDE.md` da
+  sua instalação do Claude Code.
+- Para criar ou mudar algo, ele propõe: **Criar** (nota, `.canvas`, `.drawio`, `.excalidraw`),
+  **Alterar** (o conteúdo novo de um arquivo, mostrado como diff) ou **Criar pasta**. Cada proposta
+  tem **Aplicar** e **Descartar**; com várias, há **Aplicar todas**. Não há como apagar nem renomear.
+- "Esta nota" é a nota aberta: o painel informa ao Claude qual é. Textos não salvos são gravados
+  antes de cada pedido.
+- A conversa continua entre mensagens e fica salva neste computador; **+** começa outra. O botão de
+  enviar vira **Parar** enquanto ele responde.
+- Em **⚙ Configurações › Claude**: o modelo (padrão do Claude Code, Opus, Sonnet ou Haiku) e, se a
+  busca automática não achar, o comando (`wsl` ou o caminho completo do executável).
+
 ## Primeiros passos
 
 1. Abra o DocX e vá em **⚙ Configurações › Vault e sincronização**.
@@ -271,6 +302,7 @@ Atalhos de teclado**.
 | `Ctrl+Shift+F` | Buscar no vault |
 | `Ctrl+G` | Grafo |
 | `Ctrl+Shift+B` | Barra lateral direita |
+| `Ctrl+Shift+L` | Conversar com o Claude |
 | `Ctrl+E` | Alternar edição e leitura |
 | `Ctrl+B` / `Ctrl+I` / `Ctrl+K` | Negrito / itálico / link |
 | `Ctrl+L` | Alternar caixa de seleção |
@@ -302,6 +334,9 @@ tem as configurações copiadas automaticamente na primeira abertura do DocX.
 - O conteúdo das notas é sanitizado antes de ser exibido. Links externos abrem no navegador, e
   arquivos locais só são lidos de dentro do vault.
 - Plugins de terceiros não são suportados, por segurança.
+- O assistente Claude roda o Claude Code do seu computador apenas com ferramentas de leitura,
+  limitadas à pasta do vault. As mudanças que ele propõe só são gravadas quando você clica em
+  **Aplicar**.
 - O editor de diagramas roda num iframe com origem própria (`docx-drawio://`), sem acesso às notas
   nem ao app, e conversa com o DocX apenas por mensagens. Desenhos incorporados em notas são
   mostrados como imagem.
