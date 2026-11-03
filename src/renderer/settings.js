@@ -1,5 +1,6 @@
 import { $, el, icon, errorText } from './dom';
 import { prefs, PREF_SECTIONS } from './prefs';
+import { notice } from './status';
 
 const api = window.docs;
 
@@ -109,7 +110,11 @@ export function setupSettings({ beforeSave, onSaved, extraSections = [] }) {
         await beforeSave();
         const saved = await api.saveConfig(data);
         dialog.close();
-        await onSaved(saved);
+        // Another repository in the same folder: the app gave it a folder of its own.
+        if (data.vaultPath && saved.vaultPath !== data.vaultPath.trim()) {
+          notice(`Outro repositório, outra pasta: as notas dele ficam em ${saved.vaultPath}`, { timeout: 10000 });
+        }
+        await onSaved(saved, cfg);
       } catch (err) {
         error.textContent = errorText(err);
         error.hidden = false;

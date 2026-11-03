@@ -5,7 +5,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { ConfigStore, normalize, isGitConfigured } = require('../src/main/config');
+const {
+  ConfigStore, normalize, isGitConfigured, resolveVaultFolder,
+} = require('../src/main/config');
 
 const base = { vaultPath: path.resolve('/notas') };
 
@@ -51,4 +53,46 @@ test('claudeCommand accepts only "wsl" or a claude executable path', () => {
   for (const bad of ['claude', path.resolve('/bin/sh'), path.resolve('/tmp/claude.sh'), path.resolve('/tmp/vault/evil.exe')]) {
     assert.throws(() => normalize({ ...base, claudeCommand: bad }), /Claude Code/, bad);
   }
+});
+
+const NOTAS = 'https://github.com/lucas/notas.git';
+const PROJETO = 'https://github.com/lucas/projeto.git';
+const docs = path.resolve('/docs/notas-pessoais');
+const git = (gitUrl, vaultPath = docs, extra = {}) => ({ ...normalize({ vaultPath, gitUrl }), ...extra });
+
+test('another repository in the same folder gets a folder of its own, named after it', () => {
+  const next = resolveVaultFolder(git(NOTAS), git(PROJETO), () => 'missing');
+  assert.equal(next.vaultPath, path.resolve('/docs/projeto'));
+  assert.equal(next.repoFolders[NOTAS], docs);
+  assert.equal(next.repoFolders[PROJETO], path.resolve('/docs/projeto'));
+});
+
+test('switching back reopens the folder each repository had', () => {
+  const first = resolveVaultFolder(git(NOTAS), git(PROJETO), () => 'missing');
+  const back = resolveVaultFolder(first, { ...first, gitUrl: NOTAS }, () => 'used');
+  assert.equal(back.vaultPath, docs);
+  const again = resolveVaultFolder(back, { ...back, gitUrl: 'https://github.com/lucas/projeto' }, () => 'used');
+  assert.equal(again.vaultPath, path.resolve('/docs/projeto'));
+});
+
+test('a new folder never lands on one already in use', () => {
+  const used = new Set([path.resolve('/docs/projeto'), path.resolve('/docs/projeto (2)')]);
+  const next = resolveVaultFolder(git(NOTAS), git(PROJETO), (dir) => (used.has(dir) ? 'used' : 'missing'));
+  assert.equal(next.vaultPath, path.resolve('/docs/projeto (3)'));
+  const empty = resolveVaultFolder(git(NOTAS), git(PROJETO), () => 'empty');
+  assert.equal(empty.vaultPath, path.resolve('/docs/projeto'));
+});
+
+test('the folder stays when the user picks one, the URL is the same or there was no repository', () => {
+  const chosen = path.resolve('/outra/pasta');
+  assert.equal(resolveVaultFolder(git(NOTAS), git(PROJETO, chosen), () => 'used').vaultPath, chosen);
+  assert.equal(resolveVaultFolder(git(NOTAS), git(NOTAS.slice(0, -4)), () => 'used').vaultPath, docs);
+  assert.equal(resolveVaultFolder(git(''), git(PROJETO), () => 'used').vaultPath, docs);
+  const off = { ...git(PROJETO), syncProvider: 'none' };
+  assert.equal(resolveVaultFolder(git(NOTAS), off, () => 'used').vaultPath, docs);
+});
+
+test('repoFolders survive a save and drop bad entries', () => {
+  const cfg = normalize({ vaultPath: docs, repoFolders: { [NOTAS]: docs, x: 'relativo', '': docs, y: 3 } });
+  assert.deepEqual(cfg.repoFolders, { [NOTAS]: docs });
 });

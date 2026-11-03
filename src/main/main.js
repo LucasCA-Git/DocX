@@ -3,7 +3,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, protocol, Menu, session } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
-const { ConfigStore, isGitConfigured } = require('./config');
+const { ConfigStore, isGitConfigured, resolveVaultFolder } = require('./config');
 const { Vault } = require('./vault');
 const { GitSync } = require('./sync/git-sync');
 const { resolveAsset, assetHeaders, parseRange } = require('./asset-protocol');
@@ -138,7 +138,7 @@ function registerIpc() {
   handle('config:save', async (input) => {
     // The form sends only its own fields; Claude Code's command changes only through claude:set-command.
     const { claudeCommand, ...fields } = input ?? {};
-    config = configStore.save({ ...config, ...fields });
+    config = configStore.save(resolveVaultFolder(config, { ...config, ...fields }));
     await openVault();
     return publicConfig();
   });

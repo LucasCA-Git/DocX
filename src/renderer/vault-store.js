@@ -21,6 +21,19 @@ export class VaultStore extends EventTarget {
     this.texts = new Map();
   }
 
+  // Another vault was opened: nothing of the old one may linger (a note with the same path in both
+  // would keep the old text and links). Refreshes still in flight are dropped.
+  clear() {
+    this.generation++;
+    this.files = [];
+    this.folders = [];
+    this.times = {};
+    this.index = new LinkIndex();
+    this.pendingChanged.clear();
+    this.texts.clear();
+    this.version++;
+  }
+
   // Concurrent refreshes can answer out of order; only the latest request is applied. Notes and
   // boards not indexed yet, and the changed ones, are read so the index (and the graph) knows their
   // links. Only note texts are kept (boards are JSON/XML, not text to search or quote).

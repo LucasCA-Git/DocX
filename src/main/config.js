@@ -2,7 +2,9 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { validateRemoteUrl, validateBranch } = require('./sync/git-sync');
+const {
+  validateRemoteUrl, validateBranch, sameRemote, repoName,
+} = require('./sync/git-sync');
 
 const DEFAULTS = {
   vaultPath: '',
@@ -12,6 +14,9 @@ const DEFAULTS = {
   gitBranch: 'main',
   // Claude Code to run for the assistant: '' finds it, 'wsl' uses the one inside WSL, or a full path.
   claudeCommand: '',
+  // Folder of each repository used so far (remote URL → vault folder), so switching repositories
+  // switches folders too and switching back reopens the old one.
+  repoFolders: {},
 };
 
 const PROVIDERS = ['git', 'none'];
@@ -26,6 +31,8 @@ function normalize(input) {
     gitUrl: pick('gitUrl'),
     gitBranch: pick('gitBranch') || DEFAULTS.gitBranch,
     claudeCommand: pick('claudeCommand'),
+    repoFolders: Object.fromEntries(Object.entries(input?.repoFolders ?? {})
+      .filter(([url, dir]) => typeof url === 'string' && url && typeof dir === 'string' && path.isAbsolute(dir))),
   };
   if (cfg.vaultPath && !path.isAbsolute(cfg.vaultPath)) throw new Error('A pasta do vault precisa ser um caminho absoluto');
   if (!PROVIDERS.includes(cfg.syncProvider)) throw new Error('Tipo de sincronização inválido');
@@ -40,6 +47,49 @@ function normalize(input) {
 }
 
 const isGitConfigured = (cfg) => cfg.syncProvider === 'git' && Boolean(cfg.gitUrl);
+
+const samePath = (a, b) => {
+  const norm = (p) => path.resolve(p).replace(/[\\/]+$/, '');
+  return process.platform === 'win32' ? norm(a).toLowerCase() === norm(b).toLowerCase() : norm(a) === norm(b);
+};
+
+// What is in a folder: 'missing', 'empty' or 'used'.
+function inspectFolder(dir) {
+  try {
+    return fs.readdirSync(dir).length ? 'used' : 'empty';
+  } catch {
+    return 'missing';
+  }
+}
+
+// A vault folder belongs to one repository. When the settings change the Git URL but keep the
+// folder, the new repository gets its own folder: the one it had before, or a new one next to the
+// current folder named after the repository ("Documents/projeto" for …/projeto.git), never one
+// already in use. Without this the old notes would be merged into the new repository.
+function resolveVaultFolder(prev, next, inspect = inspectFolder) {
+  const repoFolders = { ...prev.repoFolders, ...next.repoFolders };
+  const known = (url) => Object.entries(repoFolders).find(([u]) => sameRemote(u, url))?.[1];
+  const remember = (url, dir) => {
+    for (const u of Object.keys(repoFolders)) if (sameRemote(u, url)) delete repoFolders[u];
+    repoFolders[url] = dir;
+  };
+  if (prev.gitUrl && prev.vaultPath) remember(prev.gitUrl, prev.vaultPath);
+  let { vaultPath } = next;
+  const switched = isGitConfigured(next) && prev.gitUrl && !sameRemote(prev.gitUrl, next.gitUrl)
+    && vaultPath && prev.vaultPath && samePath(vaultPath, prev.vaultPath);
+  if (switched) {
+    vaultPath = known(next.gitUrl);
+    if (!vaultPath) {
+      const base = path.join(path.dirname(prev.vaultPath), repoName(next.gitUrl));
+      for (let i = 1; !vaultPath; i++) {
+        const candidate = i === 1 ? base : `${base} (${i})`;
+        if (inspect(candidate) !== 'used') vaultPath = candidate;
+      }
+    }
+  }
+  if (isGitConfigured(next) && vaultPath) remember(next.gitUrl, vaultPath);
+  return { ...next, vaultPath, repoFolders };
+}
 
 // Stored in Electron's userData folder, outside the vault, so it is never synced.
 class ConfigStore {
@@ -69,4 +119,6 @@ class ConfigStore {
   }
 }
 
-module.exports = { ConfigStore, isGitConfigured, normalize };
+module.exports = {
+  ConfigStore, isGitConfigured, normalize, resolveVaultFolder,
+};

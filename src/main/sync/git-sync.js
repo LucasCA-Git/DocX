@@ -139,6 +139,16 @@ function cleanEnv() {
 
 const splitZ = (buf) => buf.toString('utf8').split('\0').filter(Boolean);
 
+// The same repository written another way: case of the host, a trailing slash or ".git".
+const remoteKey = (url) => String(url ?? '').trim().replace(/\/+$/, '').replace(/\.git$/i, '').replace(/^([^/]*\/\/)?([^/:]+)/, (m) => m.toLowerCase());
+const sameRemote = (a, b) => remoteKey(a) === remoteKey(b);
+
+// A folder name for a remote: its last path segment ("notas" for github.com/lucas/notas.git).
+function repoName(url) {
+  const last = remoteKey(url).split(/[/:]/).filter(Boolean).pop() ?? '';
+  return last.replace(/[^\w.-]+/g, '-').replace(/^[.-]+/, '') || 'notas';
+}
+
 // Sync through a Git remote: the vault folder is the working tree. Every round commits what changed
 // here, merges what came from the remote and pushes. Nothing is silently lost:
 // when both sides changed a file the remote version is kept next to ours as a "(conflito …)" copy.
@@ -328,8 +338,18 @@ class GitSync extends EventEmitter {
       if (!current.includes(block)) await fsp.writeFile(full, `${current}${current && !current.endsWith('\n') ? '\n' : ''}${block}`);
     }
     const { code, stdout } = await this.run(['remote', 'get-url', 'origin'], { okCodes: [0, 2] });
+    const current = stdout.toString().trim();
     if (code !== 0) await this.run(['remote', 'add', 'origin', '--', this.url]);
-    else if (stdout.toString().trim() !== this.url) await this.run(['remote', 'set-url', 'origin', '--', this.url]);
+    else if (current !== this.url) {
+      // A folder that already holds another repository's notes is never merged into this one: that
+      // would mix two vaults and push the old notes to the new remote. Only an empty repo (nothing
+      // committed yet) or the same remote written another way may be repointed.
+      const { code: head } = await this.run(['rev-parse', '--verify', '-q', 'HEAD'], { okCodes: [0, 1, 128] });
+      if (head === 0 && !sameRemote(current, this.url)) {
+        throw new Error(`Esta pasta já sincroniza com outro repositório (${current}). Para usar ${this.url}, escolha outra pasta nas configurações.`);
+      }
+      await this.run(['remote', 'set-url', 'origin', '--', this.url]);
+    }
     for (const [key, value] of [['user.name', 'DocX'], ['user.email', `docx@${this.hostname}`]]) {
       const res = await this.run(['config', '--get', key], { okCodes: [0, 1] });
       if (res.code !== 0) await this.run(['config', key, value]);
@@ -496,4 +516,6 @@ class GitSync extends EventEmitter {
   }
 }
 
-module.exports = { GitSync, GitError, validateRemoteUrl, validateBranch, describeGitError, findGit, conflictName };
+module.exports = {
+  GitSync, GitError, validateRemoteUrl, validateBranch, describeGitError, findGit, conflictName, sameRemote, repoName,
+};

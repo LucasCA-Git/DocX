@@ -9,7 +9,7 @@ const { execFileSync } = require('node:child_process');
 
 const { Vault } = require('../src/main/vault');
 const {
-  GitSync, validateRemoteUrl, validateBranch, describeGitError, findGit, conflictName,
+  GitSync, validateRemoteUrl, validateBranch, describeGitError, findGit, conflictName, sameRemote, repoName,
 } = require('../src/main/sync/git-sync');
 
 // Isolated from the developer's ~/.gitconfig: no identity, no hooks, no credential helpers. An empty
@@ -247,7 +247,7 @@ test('a later sync with nothing new does not commit', async () => {
   assert.equal(git(a.root, 'rev-parse', 'HEAD'), before);
 });
 
-test('reports status and points origin at a changed URL', async () => {
+test('reports status and never mixes a folder of one repository into another', async () => {
   const remote = await bareRemote();
   const other = await bareRemote();
   const a = await machine(remote);
@@ -257,9 +257,25 @@ test('reports status and points origin at a changed URL', async () => {
   await a.sync.syncAll();
   assert.deepEqual(states, ['syncing', 'idle']);
 
+  // Another remote on a folder that already has notes from the first one: refused, nothing sent.
   const moved = new GitSync({ vault: a.vault, url: other, branch: 'main', allowFile: true, env: ENV });
-  await moved.syncAll();
-  assert.deepEqual(remoteFiles(other), ['nota.md']);
+  await assert.rejects(moved.syncAll(), /outro repositório/);
+  assert.equal(git(other, 'for-each-ref'), '', 'nothing was pushed');
+  assert.equal(git(a.root, 'remote', 'get-url', 'origin').trim(), remote);
+
+  // The same remote written another way is still the same repository.
+  const same = new GitSync({ vault: a.vault, url: `${remote}/`, branch: 'main', allowFile: true, env: ENV });
+  await same.syncAll();
+});
+
+test('sameRemote and repoName', () => {
+  assert.ok(sameRemote('https://github.com/Lucas/notas.git', 'https://GITHUB.com/Lucas/notas/'));
+  assert.ok(sameRemote('git@github.com:lucas/notas.git', 'git@github.com:lucas/notas'));
+  assert.ok(!sameRemote('https://github.com/lucas/notas.git', 'https://github.com/lucas/projeto.git'));
+  assert.ok(!sameRemote('https://github.com/lucas/notas.git', 'https://github.com/outro/notas.git'));
+  assert.equal(repoName('https://github.com/LucasCA-Git/projeto-jusbrasil.git'), 'projeto-jusbrasil');
+  assert.equal(repoName('git@github.com:lucas/notas.git'), 'notas');
+  assert.equal(repoName('ssh://git@host.com:2222/grupo/sub/meu repo.git'), 'meu-repo');
 });
 
 test('validateRemoteUrl accepts https and ssh, rejects the rest', () => {

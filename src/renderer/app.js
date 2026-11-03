@@ -43,9 +43,10 @@ const vaultName = (cfg) => cfg.vaultPath.split(/[\\/]/).filter(Boolean).pop() ||
 const openSettings = setupSettings({
   extraSections: [hotkeysSection, claudeSection],
   beforeSave: () => workspace.saveAll(),
-  onSaved: async (cfg) => {
+  onSaved: async (cfg, previous) => {
     $('#vault-name').textContent = vaultName(cfg);
     claude.setVault(cfg.vaultPath);
+    if (cfg.vaultPath !== previous?.vaultPath) store.clear();
     await store.refresh();
     workspace.reset();
   },
