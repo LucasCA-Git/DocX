@@ -4,6 +4,7 @@ import {
   graphData, nodeRadius, toWorld, zoomAt, hitTest,
 } from '../../shared/graph-model';
 import { makeStarfield, twinkle } from '../../shared/graph-physics';
+import { createTraffic, stepTraffic, trafficGlyphs } from '../../shared/space-traffic';
 import { galaxyLayout, parentFolder } from '../../shared/graph-galaxy';
 import { rememberLayout, recallLayout } from '../../shared/graph-memory';
 
@@ -45,7 +46,11 @@ const SKY = {
   link: 'rgba(150, 175, 255, 0.38)',
   glow: 'rgba(120, 150, 255, 0.07)',
   label: '#c9d4ff',
+  ship: '#c9d4ff',
+  bolt: '#ff7a7a',
 };
+const TRAFFIC_FONT = 'ui-monospace, "Cascadia Code", Consolas, monospace';
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 // Above this many nodes the sky stops animating on its own (the simulation still redraws it).
 const SKY_ANIMATION_MAX_NODES = 3000;
 
@@ -173,7 +178,7 @@ const GROUP_COLORS = ['#e9973f', '#4fb3a9', '#e05d6f', '#5b8def', '#b07de8', '#7
 function loadOptions(key) {
   const defaults = {
     attachments: true, unresolved: false, orphans: true, tags: false, arrows: false, search: '',
-    groups: [], depth: 1, nodeSize: 1, constellation: true, gravity: true, pinOnDrag: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
+    groups: [], depth: 1, nodeSize: 1, constellation: true, traffic: true, gravity: true, pinOnDrag: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
   };
   try {
     const saved = JSON.parse(localStorage.getItem(key)) ?? {};
@@ -221,6 +226,9 @@ export class GraphView {
     // Nodes the user pinned by dragging, and the folder whose layout is on screen (null: none yet).
     this.pinnedNodes = new Set();
     this.shownFolder = null;
+    // Ships and asteroids crossing the sky (global graph only; see space-traffic.js).
+    this.traffic = local ? null : createTraffic();
+    this.trafficClock = 0;
 
     this.canvas = el('canvas', { class: 'graph-canvas' });
     this.ctx = this.canvas.getContext('2d');
@@ -382,6 +390,7 @@ export class GraphView {
         })),
       section('display', 'Exibição',
         visual('constellation', 'Constelação (céu estrelado)', () => this.requestDraw()),
+        this.isLocal ? null : visual('traffic', 'Naves e asteroides no céu', () => this.requestDraw()),
         this.isLocal ? null : toggle('galaxies', 'Galáxias (pastas com sol)'),
         toggle('arrows', 'Setas'),
         slider('Tamanho dos nós', this.options.nodeSize, 0.5, 3, 0.1, (v) => {
@@ -967,6 +976,32 @@ export class GraphView {
       const py = (((s.y * height + cam.y * 0.06 * s.depth) % height) + height) % height;
       ctx.globalAlpha = twinkle(s.base, s.phase, time);
       ctx.fillRect(px, py, s.r, s.r);
+    }
+    ctx.globalAlpha = 1;
+    this.drawTraffic();
+  }
+
+  // Ships, fleets and asteroids drifting by, faint, behind the notes. Stops with reduced motion.
+  drawTraffic() {
+    const now = performance.now();
+    const dt = this.trafficClock ? (now - this.trafficClock) / 1000 : 0;
+    this.trafficClock = now;
+    if (!this.traffic || !this.options.traffic || REDUCED_MOTION.matches) return;
+    const { ctx, width, height } = this;
+    stepTraffic(this.traffic, dt, width, height);
+    const glyphs = trafficGlyphs(this.traffic);
+    if (!glyphs.length) return;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    let size = 0;
+    for (const g of glyphs) {
+      if (g.size !== size) {
+        size = g.size;
+        ctx.font = `${size}px ${TRAFFIC_FONT}`;
+      }
+      ctx.globalAlpha = g.alpha;
+      ctx.fillStyle = g.bolt ? SKY.bolt : SKY.ship;
+      ctx.fillText(g.text, g.x, g.y);
     }
     ctx.globalAlpha = 1;
   }
