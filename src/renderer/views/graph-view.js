@@ -47,8 +47,8 @@ const SKY = {
   glow: 'rgba(120, 150, 255, 0.07)',
   label: '#c9d4ff',
   ship: '#c9d4ff',
-  bolt: '#ff7a7a',
 };
+const TRAFFIC_LEVELS = ['calmo', 'movimentado', 'frotas', 'batalhas', 'guerra total'];
 const TRAFFIC_FONT = 'ui-monospace, "Cascadia Code", Consolas, monospace';
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 // Above this many nodes the sky stops animating on its own (the simulation still redraws it).
@@ -178,7 +178,7 @@ const GROUP_COLORS = ['#e9973f', '#4fb3a9', '#e05d6f', '#5b8def', '#b07de8', '#7
 function loadOptions(key) {
   const defaults = {
     attachments: true, unresolved: false, orphans: true, tags: false, arrows: false, search: '',
-    groups: [], depth: 1, nodeSize: 1, constellation: true, traffic: true, gravity: true, pinOnDrag: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
+    groups: [], depth: 1, nodeSize: 1, constellation: true, traffic: true, trafficLevel: 1, gravity: true, pinOnDrag: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
   };
   try {
     const saved = JSON.parse(localStorage.getItem(key)) ?? {};
@@ -391,6 +391,7 @@ export class GraphView {
       section('display', 'Exibição',
         visual('constellation', 'Constelação (céu estrelado)', () => this.requestDraw()),
         this.isLocal ? null : visual('traffic', 'Naves e asteroides no céu', () => this.requestDraw()),
+        this.isLocal ? null : this.trafficSlider(save),
         this.isLocal ? null : toggle('galaxies', 'Galáxias (pastas com sol)'),
         toggle('arrows', 'Setas'),
         slider('Tamanho dos nós', this.options.nodeSize, 0.5, 3, 0.1, (v) => {
@@ -981,6 +982,22 @@ export class GraphView {
     this.drawTraffic();
   }
 
+  // How busy the sky is, from a calm sky to all-out war; the label names the level.
+  trafficSlider(save) {
+    const level = Math.min(TRAFFIC_LEVELS.length, Math.max(1, Math.round(this.options.trafficLevel) || 1));
+    const name = el('span', { class: 'graph-traffic-level', text: TRAFFIC_LEVELS[level - 1] });
+    const input = el('input', {
+      type: 'range', min: 1, max: TRAFFIC_LEVELS.length, step: 1, class: 'graph-slider',
+    });
+    input.value = level;
+    input.addEventListener('input', () => {
+      this.options.trafficLevel = Number(input.value);
+      name.textContent = TRAFFIC_LEVELS[this.options.trafficLevel - 1];
+      save();
+    });
+    return el('label', { class: 'graph-slider-row' }, el('span', {}, 'Tráfego: ', name), input);
+  }
+
   // Ships, fleets and asteroids drifting by, faint, behind the notes. Stops with reduced motion.
   drawTraffic() {
     const now = performance.now();
@@ -988,7 +1005,7 @@ export class GraphView {
     this.trafficClock = now;
     if (!this.traffic || !this.options.traffic || REDUCED_MOTION.matches) return;
     const { ctx, width, height } = this;
-    stepTraffic(this.traffic, dt, width, height);
+    stepTraffic(this.traffic, dt, width, height, this.options.trafficLevel);
     const glyphs = trafficGlyphs(this.traffic);
     if (!glyphs.length) return;
     ctx.textAlign = 'left';
@@ -1000,7 +1017,7 @@ export class GraphView {
         ctx.font = `${size}px ${TRAFFIC_FONT}`;
       }
       ctx.globalAlpha = g.alpha;
-      ctx.fillStyle = g.bolt ? SKY.bolt : SKY.ship;
+      ctx.fillStyle = g.color ?? SKY.ship;
       ctx.fillText(g.text, g.x, g.y);
     }
     ctx.globalAlpha = 1;

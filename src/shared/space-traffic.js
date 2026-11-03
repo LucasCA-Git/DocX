@@ -1,25 +1,45 @@
 'use strict';
 
-// Background traffic for the constellation sky: small ASCII ships, chases, fleets and asteroids
-// crossing the screen now and then. Purely decorative, nobody controls it. Few things at once,
-// faint and far away, so it never competes with the notes. Pure logic (no canvas): the graph view
-// steps it every frame and draws the glyphs it returns.
+// Background traffic for the constellation sky: small ASCII ships, chases, fleets, battles,
+// hyperspace jumps and asteroids crossing the screen. Purely decorative, nobody controls it.
+// The level (1 calm … 5 all-out war) sets how much happens at once; at level 1 it is a few faint
+// things now and then, so it never competes with the notes. Pure logic (no canvas): the graph
+// view steps it every frame and draws the glyphs it returns.
 
-// Sprites face right; the ones going left are mirrored (see mirror()).
+// Sprites face right; the ones going left are mirrored (see mirror()). Two sides: the rebels
+// (red lasers) and the empire (green lasers).
 const SPRITES = {
   fighter: [
     ' \\',
     '-=>',
     ' /',
   ],
-  interceptor: ['|-o-|'],
+  wing: [
+    ' \\\\',
+    '-=[]>',
+    ' //',
+  ],
+  bomber: ['=o==-'],
   dart: ['=>'],
+  freighter: [
+    '  .--.',
+    '=(=[]O)',
+    '  \'--\'',
+  ],
   cruiser: [
     '|``--.._',
     '|==[]  _>',
     '|__..--\'',
   ],
-  rocks: [['@'], ['o'], ['°'], ['.-.', '\'-\'']],
+  interceptor: ['|-o-|'],
+  hunter: ['>-o-<'],
+  destroyer: [
+    '  |__..--``',
+    '=[|]========>',
+    '  |``\'\'--..',
+  ],
+  rocks: [['@'], ['o'], ['\u00b0'], ['.-.', '\'-\'']],
+  explosion: [['*'], ['\\|/', '-o-', '/|\\'], ['. \' .', '\' . \'']],
 };
 
 const MIRROR = { '<': '>', '>': '<', '/': '\\', '\\': '/', '(': ')', ')': '(', '[': ']', ']': '[', '{': '}', '}': '{' };
@@ -32,16 +52,29 @@ function mirror(lines) {
 
 const spriteWidth = (lines) => Math.max(...lines.map((l) => l.length));
 
+const LASER = { rebel: '#ff6b6b', empire: '#7dff8a' };
+const EXPLOSION_COLOR = '#ffd27a';
+
+// Per level: crossings on screen at most, seconds between them, and how often each kind shows up.
+const LEVELS = [
+  { max: 2, gap: [6, 16], kinds: { asteroids: 0.34, lone: 0.24, chase: 0.26, fleet: 0.16 } },
+  { max: 3, gap: [4, 10], kinds: { asteroids: 0.28, lone: 0.18, chase: 0.24, fleet: 0.15, jump: 0.1, battle: 0.05 } },
+  { max: 5, gap: [2.5, 7], kinds: { asteroids: 0.18, field: 0.1, lone: 0.12, chase: 0.22, fleet: 0.14, jump: 0.1, battle: 0.14 } },
+  { max: 7, gap: [1.5, 4.5], kinds: { asteroids: 0.12, field: 0.1, lone: 0.08, chase: 0.2, fleet: 0.15, jump: 0.1, battle: 0.25 } },
+  { max: 10, gap: [0.8, 2.5], kinds: { asteroids: 0.08, field: 0.1, lone: 0.04, chase: 0.18, fleet: 0.15, jump: 0.1, battle: 0.35 } },
+];
+
 const TRAFFIC = {
-  maxEvents: 2,
+  levels: LEVELS.length,
   firstGap: [2, 6],
-  gap: [6, 16],
-  // How often each kind of crossing shows up.
-  kinds: [['asteroids', 0.34], ['lone', 0.24], ['chase', 0.26], ['fleet', 0.16]],
+  // Chance that a shot in a battle takes down a ship of the other side.
+  hitChance: 0.18,
   // Character cell in px for a font size of 1 (monospace).
   cellW: 0.62,
   cellH: 1.15,
 };
+
+const levelOf = (level) => LEVELS[Math.min(LEVELS.length, Math.max(1, Math.round(level) || 1)) - 1];
 
 // Small, fast seeded generator (mulberry32), as in graph-physics.js.
 function random(seed) {
@@ -57,63 +90,102 @@ function random(seed) {
 const between = (rand, [lo, hi]) => lo + rand() * (hi - lo);
 const pick = (rand, list) => list[Math.floor(rand() * list.length)];
 
-function pickKind(rand) {
-  let r = rand() * TRAFFIC.kinds.reduce((sum, [, w]) => sum + w, 0);
-  for (const [kind, w] of TRAFFIC.kinds) {
+function pickKind(rand, kinds) {
+  const entries = Object.entries(kinds);
+  let r = rand() * entries.reduce((sum, [, w]) => sum + w, 0);
+  for (const [kind, w] of entries) {
     r -= w;
     if (r < 0) return kind;
   }
-  return TRAFFIC.kinds[0][0];
+  return entries[0][0];
 }
 
 function createTraffic(seed = Date.now()) {
   const rand = random(seed);
-  return { rand, time: 0, events: [], bolts: [], nextSpawn: between(rand, TRAFFIC.firstGap) };
+  return {
+    rand, time: 0, seq: 0, events: [], bolts: [], blasts: [], nextSpawn: between(rand, TRAFFIC.firstGap),
+  };
 }
 
 // A piece is one sprite placed at (dx, dy) character cells from the event's anchor. `wobble`
-// makes it drift up and down a little (ships in a chase dodging).
-const piece = (lines, dx, dy, extra = {}) => ({ lines, dx, dy, wobble: 0, phase: 0, ...extra });
+// makes it drift up and down a little (ships dodging), `gun` lets it fire, `armor` keeps it from
+// being shot down (big ships), `fade` dims it (hyperspace streaks).
+const piece = (lines, dx, dy, extra = {}) => ({
+  lines, dx, dy, wobble: 0, phase: 0, gun: false, armor: false, fade: 1, ...extra,
+});
+
+const rebelFighter = (rand) => pick(rand, [SPRITES.wing, SPRITES.wing, SPRITES.fighter, SPRITES.bomber]);
+const empireFighter = (rand) => pick(rand, [SPRITES.interceptor, SPRITES.interceptor, SPRITES.hunter]);
+
+// A loose squadron of fighters, staggered behind the anchor.
+function squadron(rand, count, make, extra) {
+  const pieces = [];
+  for (let i = 0; i < count; i++) {
+    pieces.push(piece(make(rand), -i * between(rand, [6, 11]), between(rand, [-5, 5]), {
+      wobble: 0.5 + rand() * 0.5, phase: rand() * 6, gun: true, ...extra,
+    }));
+  }
+  return pieces;
+}
 
 // Builds the pieces of one crossing, all facing right (the anchor is the front of the group).
 function buildPieces(kind, rand) {
-  if (kind === 'asteroids') {
+  if (kind === 'asteroids' || kind === 'field') {
+    // A few rocks, or a whole field of them, tumbling slowly.
+    const field = kind === 'field';
     const pieces = [];
-    const count = 1 + Math.floor(rand() * 4);
+    const count = field ? 8 + Math.floor(rand() * 8) : 1 + Math.floor(rand() * 4);
     for (let i = 0; i < count; i++) {
-      pieces.push(piece(pick(rand, SPRITES.rocks), -i * between(rand, [4, 9]), between(rand, [-3, 3])));
+      const dx = field ? -rand() * 70 : -i * between(rand, [4, 9]);
+      pieces.push(piece(pick(rand, SPRITES.rocks), dx, between(rand, field ? [-9, 9] : [-3, 3])));
     }
-    return { pieces, speed: [10, 24], slope: 0.25, gun: false };
+    return { pieces, speed: field ? [8, 16] : [10, 24], slope: field ? 0.1 : 0.25 };
   }
   if (kind === 'lone') {
-    const sprite = pick(rand, [SPRITES.fighter, SPRITES.interceptor, SPRITES.dart]);
+    const sprite = pick(rand, [SPRITES.fighter, SPRITES.wing, SPRITES.interceptor, SPRITES.dart, SPRITES.freighter]);
     const pieces = [piece(sprite, 0, 0)];
     // Sometimes a wingman.
-    if (rand() < 0.35) pieces.push(piece(sprite, -5, sprite.length + 1));
-    return { pieces, speed: [110, 170], slope: 0.05, gun: false };
+    if (sprite !== SPRITES.freighter && rand() < 0.35) pieces.push(piece(sprite, -5, sprite.length + 1));
+    return { pieces, speed: sprite === SPRITES.freighter ? [70, 110] : [110, 170], slope: 0.05 };
+  }
+  if (kind === 'jump') {
+    // Out of hyperspace and gone: a ship trailing a long streak, very fast.
+    const sprite = pick(rand, [SPRITES.freighter, SPRITES.wing, SPRITES.cruiser]);
+    const row = Math.floor(sprite.length / 2);
+    const streak = '-'.repeat(18 + Math.floor(rand() * 20));
+    return {
+      pieces: [piece(sprite, 0, 0), piece([`${streak} `], -streak.length - 1, row, { fade: 0.45 })],
+      speed: [650, 900],
+      slope: 0,
+    };
   }
   if (kind === 'chase') {
-    // One ship running, one to three hunting it, wobbling and firing now and then.
-    const pieces = [piece(pick(rand, [SPRITES.fighter, SPRITES.dart]), 0, 0, { wobble: 0.6, phase: rand() * 6 })];
+    // One ship running, one to three hunters after it, wobbling and firing green bolts.
+    const pieces = [piece(pick(rand, [SPRITES.fighter, SPRITES.wing, SPRITES.freighter]), 0, 0, { wobble: 0.6, phase: rand() * 6 })];
     const hunters = 1 + Math.floor(rand() * 3);
     for (let i = 0; i < hunters; i++) {
-      pieces.push(piece(SPRITES.interceptor, -12 - i * 8, between(rand, [-2, 2]), { wobble: 0.8, phase: rand() * 6, gun: true }));
+      pieces.push(piece(empireFighter(rand), -12 - i * 8, between(rand, [-2, 2]), { wobble: 0.8, phase: rand() * 6, gun: true }));
     }
-    return { pieces, speed: [120, 180], slope: 0.04, gun: true };
+    return {
+      pieces, speed: [120, 180], slope: 0.04, faction: 'empire',
+    };
   }
-  // A fleet: one or two cruisers and a V of escorts behind.
-  const pieces = [piece(SPRITES.cruiser, 0, 0)];
-  if (rand() < 0.4) pieces.push(piece(SPRITES.cruiser, -16, 5));
+  // A fleet: a rebel cruiser with fighters, or an imperial destroyer with its escort, in a V.
+  const empire = rand() < 0.5;
+  const pieces = [piece(empire ? SPRITES.destroyer : SPRITES.cruiser, 0, 0, { armor: true })];
+  if (rand() < 0.4) pieces.push(piece(empire ? SPRITES.destroyer : SPRITES.cruiser, -18, 6, { armor: true }));
   const escorts = 2 + Math.floor(rand() * 4);
   for (let i = 0; i < escorts; i++) {
     const row = Math.floor(i / 2) + 1;
     const side = i % 2 ? 1 : -1;
-    pieces.push(piece(SPRITES.dart, -6 - row * 5, 1 + side * (row * 2 + 2)));
+    pieces.push(piece(empire ? empireFighter(rand) : pick(rand, [SPRITES.wing, SPRITES.dart]), -6 - row * 6, 1 + side * (row * 2 + 2)));
   }
-  return { pieces, speed: [22, 38], slope: 0.02, gun: false };
+  return {
+    pieces, speed: [22, 38], slope: 0.02, faction: empire ? 'empire' : 'rebel',
+  };
 }
 
-// Width and height of the group, in cells, measured from the anchor.
+// Leftmost and rightmost cell of the group, measured from the anchor.
 function extent(pieces) {
   let left = 0;
   let right = 0;
@@ -124,14 +196,11 @@ function extent(pieces) {
   return { left, right };
 }
 
-function spawn(state, width, height, kind = pickKind(state.rand)) {
+// Puts a group on screen: just outside the side it comes from, heading across.
+function launch(state, built, { width, height, dir, y, depth, kind }) {
   const { rand } = state;
-  const built = buildPieces(kind, rand);
-  // Depth: farther things are smaller, fainter and slower.
-  const depth = between(rand, [0.45, 1]);
   const size = Math.round(8 + depth * 5);
   const cw = size * TRAFFIC.cellW;
-  const dir = rand() < 0.5 ? 1 : -1;
   const box = extent(built.pieces);
   const pieces = dir > 0 ? built.pieces : built.pieces.map((p) => {
     // Mirrored around the anchor: offsets flip and the sprite is drawn from its other end.
@@ -139,19 +208,18 @@ function spawn(state, width, height, kind = pickKind(state.rand)) {
     return { ...p, lines, dx: -p.dx - spriteWidth(lines) };
   });
   const speed = between(rand, built.speed) * (0.6 + depth * 0.4);
-  // Starts just outside the side it comes from (the whole group, trailing ships too).
-  const x = dir > 0 ? -box.right * cw - 4 : width + box.right * cw + 4;
-  const y = between(rand, [0.1, 0.9]) * height;
   const event = {
+    id: ++state.seq,
     kind,
     dir,
-    x,
+    x: dir > 0 ? -box.right * cw - 4 : width + box.right * cw + 4,
     y,
     vx: dir * speed,
     vy: (rand() * 2 - 1) * built.slope * speed,
     size,
     alpha: 0.12 + depth * 0.2,
-    gun: built.gun,
+    faction: built.faction ?? null,
+    foe: null,
     nextShot: between(rand, [0.4, 1.5]),
     span: (box.right - box.left) * cw,
     pieces,
@@ -160,58 +228,132 @@ function spawn(state, width, height, kind = pickKind(state.rand)) {
   return event;
 }
 
-const offscreen = (e, width, height) => (e.dir > 0 ? e.x - e.span > width + 8 : e.x + e.span < -8)
+// A battle: a rebel squadron and an imperial one fly at each other and trade fire; some ships
+// blow up on the way. Two events, each the other's foe.
+function battle(state, width, height) {
+  const { rand } = state;
+  const depth = between(rand, [0.6, 1]);
+  const y = between(rand, [0.2, 0.8]) * height;
+  const dir = rand() < 0.5 ? 1 : -1;
+  const rebels = squadron(rand, 2 + Math.floor(rand() * 3), rebelFighter);
+  if (rand() < 0.3) rebels.push(piece(SPRITES.cruiser, -30, 7, { armor: true }));
+  const empire = squadron(rand, 2 + Math.floor(rand() * 4), empireFighter);
+  if (rand() < 0.35) empire.push(piece(SPRITES.destroyer, -34, -8, { armor: true }));
+  const a = launch(state, {
+    pieces: rebels, speed: [70, 110], slope: 0.02, faction: 'rebel',
+  }, {
+    width, height, dir, y: y + 4, depth, kind: 'battle',
+  });
+  const b = launch(state, {
+    pieces: empire, speed: [70, 110], slope: 0.02, faction: 'empire',
+  }, {
+    width, height, dir: -dir, y: y - 4, depth, kind: 'battle',
+  });
+  a.foe = b.id;
+  b.foe = a.id;
+  return [a, b];
+}
+
+function spawn(state, width, height, kind = pickKind(state.rand, LEVELS[0].kinds)) {
+  if (kind === 'battle') return battle(state, width, height)[0];
+  const { rand } = state;
+  const built = buildPieces(kind, rand);
+  // Depth: farther things are smaller, fainter and slower.
+  return launch(state, built, {
+    width, height, dir: rand() < 0.5 ? 1 : -1, y: between(rand, [0.1, 0.9]) * height, depth: between(rand, [0.45, 1]), kind,
+  });
+}
+
+const offscreen = (e, width, height) => !e.pieces.length
+  || (e.dir > 0 ? e.x - e.span > width + 8 : e.x + e.span < -8)
   || e.y < -height * 0.3 || e.y > height * 1.3;
 
 const wobbleOf = (p, time) => (p.wobble ? Math.sin(time * 2.2 + p.phase) * p.wobble : 0);
 
-// A short laser streak leaving the front of a hunter, faster than the ships.
+// Screen position (px) of a piece's middle.
+function pieceCenter(e, p, time) {
+  const cw = e.size * TRAFFIC.cellW;
+  const ch = e.size * TRAFFIC.cellH;
+  return {
+    x: e.x + (p.dx + spriteWidth(p.lines) / 2) * cw,
+    y: e.y + (p.dy + wobbleOf(p, time) + (p.lines.length - 1) / 2) * ch,
+  };
+}
+
+// A short laser streak leaving the front of a ship, faster than the ships.
 function boltFrom(e, p, time) {
   const cw = e.size * TRAFFIC.cellW;
   const ch = e.size * TRAFFIC.cellH;
   const front = e.dir > 0 ? p.dx + spriteWidth(p.lines) + 1 : p.dx - 2;
   return {
     x: e.x + front * cw,
-    y: e.y + (p.dy + wobbleOf(p, time)) * ch,
-    vx: e.vx * 2.4,
+    y: e.y + (p.dy + wobbleOf(p, time) + Math.floor(p.lines.length / 2)) * ch,
+    vx: e.vx * 2.4 + e.dir * 120,
     life: 0.7,
     maxLife: 0.7,
     size: e.size,
-    alpha: e.alpha * 1.3,
+    alpha: Math.min(0.6, e.alpha * 1.6),
+    color: LASER[e.faction] ?? LASER.empire,
   };
 }
 
-// Advances the traffic by dt seconds on a width × height screen. A long pause (hidden tab) is
-// cut short so nothing jumps across the screen.
-function stepTraffic(state, dt, width, height) {
+// In a battle a shot can take down a fighter of the other side that is on screen.
+function maybeHit(state, e, width) {
+  if (e.foe === null || state.rand() >= TRAFFIC.hitChance) return;
+  const foe = state.events.find((f) => f.id === e.foe);
+  if (!foe) return;
+  const targets = foe.pieces.filter((p) => {
+    if (p.armor) return false;
+    const c = pieceCenter(foe, p, state.time);
+    return c.x > 0 && c.x < width;
+  });
+  if (!targets.length) return;
+  const target = pick(state.rand, targets);
+  const at = pieceCenter(foe, target, state.time);
+  foe.pieces = foe.pieces.filter((p) => p !== target);
+  state.blasts.push({
+    x: at.x, y: at.y, vx: foe.vx * 0.3, life: 0.9, maxLife: 0.9, size: foe.size, alpha: Math.min(0.7, foe.alpha * 2),
+  });
+}
+
+// Advances the traffic by dt seconds on a width × height screen, at the given level (1–5). A long
+// pause (hidden tab) is cut short so nothing jumps across the screen.
+function stepTraffic(state, dt, width, height, level = 1) {
+  const conf = levelOf(level);
   const step = Math.min(Math.max(dt, 0), 0.1);
   state.time += step;
   for (const e of state.events) {
     e.x += e.vx * step;
     e.y += e.vy * step;
-    if (e.gun) {
-      e.nextShot -= step;
-      if (e.nextShot <= 0) {
-        e.nextShot = between(state.rand, [0.5, 1.8]);
-        const shooter = pick(state.rand, e.pieces.filter((p) => p.gun));
-        if (shooter) state.bolts.push(boltFrom(e, shooter, state.time));
-      }
+    const guns = e.pieces.filter((p) => p.gun);
+    if (!guns.length) continue;
+    e.nextShot -= step;
+    if (e.nextShot <= 0) {
+      e.nextShot = between(state.rand, e.foe === null ? [0.5, 1.8] : [0.2, 0.7]);
+      state.bolts.push(boltFrom(e, pick(state.rand, guns), state.time));
+      maybeHit(state, e, width);
     }
   }
-  for (const b of state.bolts) {
+  for (const b of [...state.bolts, ...state.blasts]) {
     b.x += b.vx * step;
     b.life -= step;
   }
   state.bolts = state.bolts.filter((b) => b.life > 0);
+  state.blasts = state.blasts.filter((b) => b.life > 0);
   state.events = state.events.filter((e) => !offscreen(e, width, height));
   state.nextSpawn -= step;
   if (state.nextSpawn <= 0) {
-    state.nextSpawn = between(state.rand, TRAFFIC.gap);
-    if (state.events.length < TRAFFIC.maxEvents && width > 0 && height > 0) spawn(state, width, height);
+    state.nextSpawn = between(state.rand, conf.gap);
+    if (width > 0 && height > 0) {
+      const kind = pickKind(state.rand, conf.kinds);
+      const room = conf.max - state.events.length;
+      if (room >= (kind === 'battle' ? 2 : 1)) spawn(state, width, height, kind);
+    }
   }
 }
 
-// What to draw now: one entry per sprite line, in screen px (text baseline at y).
+// What to draw now: one entry per sprite line, in screen px (text baseline in the middle at y).
+// `color` is set for lasers and explosions; ships use the sky's color.
 function trafficGlyphs(state) {
   const out = [];
   for (const e of state.events) {
@@ -220,14 +362,37 @@ function trafficGlyphs(state) {
     for (const p of e.pieces) {
       const dy = p.dy + wobbleOf(p, state.time);
       p.lines.forEach((text, row) => {
-        out.push({ text, x: e.x + p.dx * cw, y: e.y + (dy + row) * ch, size: e.size, alpha: e.alpha });
+        out.push({
+          text, x: e.x + p.dx * cw, y: e.y + (dy + row) * ch, size: e.size, alpha: e.alpha * p.fade,
+        });
       });
     }
   }
   for (const b of state.bolts) {
-    out.push({ text: '--', x: b.x, y: b.y, size: b.size, alpha: b.alpha * (b.life / b.maxLife), bolt: true });
+    out.push({
+      text: '--', x: b.x, y: b.y, size: b.size, alpha: b.alpha * (b.life / b.maxLife), color: b.color,
+    });
+  }
+  for (const b of state.blasts) {
+    // Flash, burst, then sparks fading out, centered on where the ship was.
+    const t = 1 - b.life / b.maxLife;
+    const frame = SPRITES.explosion[Math.min(SPRITES.explosion.length - 1, Math.floor(t * SPRITES.explosion.length))];
+    const cw = b.size * TRAFFIC.cellW;
+    const ch = b.size * TRAFFIC.cellH;
+    frame.forEach((text, row) => {
+      out.push({
+        text,
+        x: b.x - (spriteWidth(frame) / 2) * cw,
+        y: b.y + (row - (frame.length - 1) / 2) * ch,
+        size: b.size,
+        alpha: b.alpha * (1 - t * 0.6),
+        color: EXPLOSION_COLOR,
+      });
+    });
   }
   return out;
 }
 
-module.exports = { SPRITES, TRAFFIC, mirror, createTraffic, spawn, stepTraffic, trafficGlyphs };
+module.exports = {
+  SPRITES, TRAFFIC, LEVELS, LASER, mirror, createTraffic, spawn, stepTraffic, trafficGlyphs,
+};
