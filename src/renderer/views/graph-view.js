@@ -83,7 +83,7 @@ function loadGraph3D() {
 function loadOptions(key) {
   const defaults = {
     attachments: true, unresolved: false, orphans: true, tags: false, arrows: false, search: '',
-    groups: [], depth: 1, nodeSize: 1, mode: '2d', autoRotate: true, constellation: true, traffic: true, trafficLevel: 1, gravity: true, pinOnDrag: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
+    groups: [], depth: 1, nodeSize: 1, mode: '3d', modeChosen: false, autoRotate: true, constellation: true, traffic: true, trafficLevel: 1, gravity: true, pinOnDrag: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
   };
   try {
     const saved = JSON.parse(localStorage.getItem(key)) ?? {};
@@ -93,7 +93,9 @@ function loadOptions(key) {
       groups: Array.isArray(saved.groups) ? saved.groups.filter((g) => typeof g?.query === 'string' && /^#[0-9a-f]{6}$/i.test(g.color)) : [],
       forces: { ...DEFAULT_FORCES, ...saved.forces },
       folder: typeof saved.folder === 'string' ? saved.folder : '',
-      mode: saved.mode === '3d' ? '3d' : '2d',
+      // The graph opens in 3D until the user picks a mode with the switch.
+      mode: saved.modeChosen === true && saved.mode === '2d' ? '2d' : '3d',
+      modeChosen: saved.modeChosen === true,
       open: { ...defaults.open, ...saved.open },
     };
   } catch {
@@ -379,16 +381,18 @@ export class GraphView {
   renderModeSwitch() {
     if (!this.modeSwitch) return;
     const want = this.options.mode;
-    const button = (mode, label, title) => el('button', {
+    const button = (mode, iconName, label, title) => el('button', {
       class: `graph-mode-button${want === mode ? ' is-active' : ''}`,
-      text: label,
       title,
       'aria-pressed': String(want === mode),
-      onclick: () => this.setMode(mode),
-    });
+      onclick: () => {
+        this.options.modeChosen = true;
+        this.setMode(mode);
+      },
+    }, icon(iconName, 15), el('span', { text: label }));
     this.modeSwitch.replaceChildren(
-      button('2d', '2D', 'Grafo plano'),
-      button('3d', '3D', 'Grafo em 3D: arraste para girar, roda para zoom, botão direito para mover, clique duplo para voar até um nó'),
+      button('2d', 'square', '2D', 'Grafo plano'),
+      button('3d', 'cube', '3D', 'Grafo em 3D: arraste para girar, roda para zoom, botão direito para mover, clique duplo para voar até um nó'),
     );
   }
 
@@ -440,6 +444,7 @@ export class GraphView {
           console.error(err);
           notice('Não deu para abrir o grafo em 3D neste computador (sem WebGL). O grafo continua em 2D.', { error: true });
           this.options.mode = '2d';
+          this.options.modeChosen = true;
           this.saveOptions();
           this.renderModeSwitch();
         }
@@ -448,6 +453,7 @@ export class GraphView {
         this.scene3d = null;
       }
       this.content.classList.toggle('is-3d', this.is3D);
+      if (this.is3D) this.showHint();
       this.canvas.dataset.mode = this.is3D ? '3d' : '2d';
       this.carry = carry;
       this.shownFolder = null;
@@ -463,6 +469,16 @@ export class GraphView {
     const pending = this.pendingMode;
     this.pendingMode = null;
     if (pending && (pending === '3d') !== this.is3D) this.setMode(pending, { persist: false });
+  }
+
+  // How to move around in 3D, shown for a few seconds each time the graph enters 3D.
+  showHint() {
+    this.hint?.remove();
+    this.hint = el('div', { class: 'graph-hint', text: 'Arraste para girar · roda: zoom · botão direito: mover · duplo clique num nó: voar até ele · Alt + arrastar: mover um nó' });
+    this.content.append(this.hint);
+    const hint = this.hint;
+    setTimeout(() => hint.classList.add('is-fading'), 6000);
+    setTimeout(() => hint.remove(), 7000);
   }
 
   on3DLost() {
@@ -757,7 +773,10 @@ export class GraphView {
     const p = this.local(event);
     // The node is kept by id: the graph can be rebuilt (a save, a sync) in the middle of a drag.
     const index = pan ? -1 : this.nodeAt(event);
-    this.pointer = { id: index >= 0 ? this.nodes[index].id : null, start: p, last: p, moved: false, pan };
+    const hit = index >= 0 ? this.nodes[index].id : null;
+    // 3D: dragging turns the view, even over a star or galaxy; Alt + drag moves the node.
+    const grab = this.is3D && !event.altKey ? null : hit;
+    this.pointer = { id: grab, hit, start: p, last: p, moved: false, pan };
     this.canvas.setPointerCapture(event.pointerId);
   }
 
@@ -800,8 +819,8 @@ export class GraphView {
   // like clicking its link.
   onPointerUp(event) {
     const drag = this.endDrag();
-    if (!drag || drag.id === null || drag.moved) return;
-    const node = this.nodes.find((n) => n.id === drag.id);
+    if (!drag || drag.hit === null || drag.moved) return;
+    const node = this.nodes.find((n) => n.id === drag.hit);
     if (!node) return;
     const newTab = event.ctrlKey || event.metaKey;
     // 3D: wait a moment, the click may be the first half of a double click (fly to the node).

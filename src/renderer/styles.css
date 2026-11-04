@@ -838,3 +838,7 @@ body.is-right-sidebar-open.is-right-sidebar-wide.is-claude-history-open { --righ
 .graph-mode-button.is-active { color: var(--text-on-accent, #fff); background: var(--interactive-accent); }
 .graph-content.is-3d .graph-canvas { cursor: grab; }
 .graph-content.is-3d .graph-canvas:active { cursor: grabbing; }
+.graph-mode { padding: 3px; gap: 3px; }
+.graph-mode-button { display: inline-flex; align-items: center; gap: 6px; min-width: 52px; padding: 6px 12px; font-size: 13px; }
+.graph-hint { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); max-width: calc(100% - 200px); padding: 6px 12px; border-radius: 8px; background: rgb(0 0 0 / 0.55); color: #dfe6ff; font-size: 12px; text-align: center; pointer-events: none; z-index: 2; transition: opacity 0.8s; }
+.graph-hint.is-fading { opacity: 0; }
