@@ -2,7 +2,7 @@
   "name": "docx-notes",
   "productName": "DocX",
   "desktopName": "docx.desktop",
-  "version": "1.10.1",
+  "version": "1.11.0",
   "description": "DocX: notas Markdown com links, grafo, canvas, desenhos e diagramas, sincronizadas pelo seu próprio repositório Git",
   "author": {
     "name": "Lucas Cardoso Alecrim",
@@ -120,7 +120,7 @@
     "@replit/codemirror-vim": "^6.4.0",
     "adm-zip": "0.5.18",
     "codemirror": "^6.0.1",
-    "d3-force": "^3.0.0",
+    "d3-force-3d": "3.0.6",
     "dompurify": "^3.2.0",
     "electron": "^33.2.0",
     "electron-builder": "26.17.0",
@@ -131,6 +131,7 @@
     "marked-footnote": "^1.4.0",
     "mermaid": "^12.1.0",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "three": "0.186.0"
   }
 }

@@ -829,3 +829,12 @@ body.is-right-sidebar-open.is-right-sidebar-wide.is-claude-history-open { --righ
 .claude-input { flex: 1; resize: none; min-height: 56px; max-height: 200px; font: inherit; font-size: 13px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); color: var(--text-normal); }
 .claude-input:focus { outline: none; border-color: var(--interactive-accent); }
 .claude-send { color: var(--text-accent); }
+
+/* 3D graph: the WebGL scene under the 2D canvas (labels, ships), and the 2D/3D switch. */
+.graph-canvas-3d { position: absolute; inset: 0; display: block; pointer-events: none; }
+.graph-mode { position: absolute; left: 12px; bottom: 12px; display: flex; padding: 2px; gap: 2px; border-radius: 8px; background: var(--background-secondary); border: 1px solid var(--background-modifier-border); box-shadow: 0 4px 14px rgb(0 0 0 / 0.35); z-index: 2; }
+.graph-mode-button { min-width: 36px; padding: 3px 8px; border: none; border-radius: 6px; background: none; color: var(--text-muted); font: 600 12px Inter, system-ui, sans-serif; cursor: pointer; }
+.graph-mode-button:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.graph-mode-button.is-active { color: var(--text-on-accent, #fff); background: var(--interactive-accent); }
+.graph-content.is-3d .graph-canvas { cursor: grab; }
+.graph-content.is-3d .graph-canvas:active { cursor: grabbing; }

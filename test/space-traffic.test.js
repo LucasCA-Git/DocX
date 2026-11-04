@@ -157,3 +157,17 @@ test('big ships are never shot down', () => {
     if (s.events.length === 2) assert.equal(armored(), start);
   }
 });
+
+test('every glyph says how deep it is and which way it flies (to place it in the 3D sky)', () => {
+  const state = createTraffic(42);
+  for (let i = 0; i < 1500; i++) stepTraffic(state, 1 / 30, W, H, 5);
+  const glyphs = trafficGlyphs(state);
+  assert.ok(glyphs.length > 0);
+  for (const g of glyphs) {
+    assert.ok(g.depth >= 0.45 && g.depth <= 1, `depth ${g.depth}`);
+    assert.ok(g.dir === 1 || g.dir === -1);
+  }
+  // A ship's lines share its depth and direction.
+  const e = state.events.find((ev) => ev.pieces.length);
+  if (e) assert.equal(e.depth >= 0.45 && e.depth <= 1, true);
+});

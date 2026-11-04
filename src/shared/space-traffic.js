@@ -212,6 +212,7 @@ function launch(state, built, { width, height, dir, y, depth, kind }) {
     id: ++state.seq,
     kind,
     dir,
+    depth,
     x: dir > 0 ? -box.right * cw - 4 : width + box.right * cw + 4,
     y,
     vx: dir * speed,
@@ -294,6 +295,8 @@ function boltFrom(e, p, time) {
     size: e.size,
     alpha: Math.min(0.6, e.alpha * 1.6),
     color: LASER[e.faction] ?? LASER.empire,
+    depth: e.depth,
+    dir: e.dir,
   };
 }
 
@@ -312,7 +315,7 @@ function maybeHit(state, e, width) {
   const at = pieceCenter(foe, target, state.time);
   foe.pieces = foe.pieces.filter((p) => p !== target);
   state.blasts.push({
-    x: at.x, y: at.y, vx: foe.vx * 0.3, life: 0.9, maxLife: 0.9, size: foe.size, alpha: Math.min(0.7, foe.alpha * 2),
+    x: at.x, y: at.y, vx: foe.vx * 0.3, life: 0.9, maxLife: 0.9, size: foe.size, alpha: Math.min(0.7, foe.alpha * 2), depth: foe.depth,
   });
 }
 
@@ -353,7 +356,9 @@ function stepTraffic(state, dt, width, height, level = 1) {
 }
 
 // What to draw now: one entry per sprite line, in screen px (text baseline in the middle at y).
-// `color` is set for lasers and explosions; ships use the sky's color.
+// `color` is set for lasers and explosions; ships use the sky's color. `depth` (0.45…1, nearer is
+// bigger) and `dir` (1 right, -1 left) let the 3D sky place the glyph in space and mirror it when
+// seen from behind.
 function trafficGlyphs(state) {
   const out = [];
   for (const e of state.events) {
@@ -363,14 +368,14 @@ function trafficGlyphs(state) {
       const dy = p.dy + wobbleOf(p, state.time);
       p.lines.forEach((text, row) => {
         out.push({
-          text, x: e.x + p.dx * cw, y: e.y + (dy + row) * ch, size: e.size, alpha: e.alpha * p.fade,
+          text, x: e.x + p.dx * cw, y: e.y + (dy + row) * ch, size: e.size, alpha: e.alpha * p.fade, depth: e.depth, dir: e.dir,
         });
       });
     }
   }
   for (const b of state.bolts) {
     out.push({
-      text: '--', x: b.x, y: b.y, size: b.size, alpha: b.alpha * (b.life / b.maxLife), color: b.color,
+      text: '--', x: b.x, y: b.y, size: b.size, alpha: b.alpha * (b.life / b.maxLife), color: b.color, depth: b.depth, dir: b.dir,
     });
   }
   for (const b of state.blasts) {
@@ -387,6 +392,8 @@ function trafficGlyphs(state) {
         size: b.size,
         alpha: b.alpha * (1 - t * 0.6),
         color: EXPLOSION_COLOR,
+        depth: b.depth,
+        dir: 1,
       });
     });
   }

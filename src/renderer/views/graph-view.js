@@ -1,5 +1,5 @@
 import { el, icon, iconButton } from '../dom';
-import { renderDocStats } from '../status';
+import { renderDocStats, notice } from '../status';
 import {
   graphData, nodeRadius, toWorld, zoomAt, hitTest,
 } from '../../shared/graph-model';
@@ -7,10 +7,17 @@ import { makeStarfield, twinkle } from '../../shared/graph-physics';
 import { createTraffic, stepTraffic, trafficGlyphs } from '../../shared/space-traffic';
 import { galaxyLayout, parentFolder } from '../../shared/graph-galaxy';
 import { rememberLayout, recallLayout } from '../../shared/graph-memory';
+import {
+  glowSprite, folderHue, galaxySprite, sunSprite, sprite,
+} from '../graph-sprites';
 
 const OPTIONS_KEY = 'docs.graph';
 // Where the user left the global graph, per folder (see graph-memory.js).
 const LAYOUT_KEY = 'docs.graph.layout';
+// The same for the 3D graph (depth and orbit camera), kept apart.
+const LAYOUT_KEY_3D = 'docs.graph.layout3d';
+// In 3D a click waits this long for a second click (a double click flies to the node).
+const CLICK_DELAY_MS = 250;
 const LAYOUT_SAVE_MS = 3000;
 const UPDATE_DELAY_MS = 300;
 const DRAG_THRESHOLD_PX = 3;
@@ -28,10 +35,10 @@ const COLORS = {
   link: 'rgba(160, 160, 160, 0.28)',
   highlight: '#7f6df2',
   label: '#dadada',
+  background: '#1e1e1e',
 };
 
 const LINK_BATCH = 256;
-const SPRITE_SIZE = 64;
 
 // Constellation look: a night sky, notes as glowing stars, links as faint star lines.
 const SKY = {
@@ -54,131 +61,29 @@ const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 // Above this many nodes the sky stops animating on its own (the simulation still redraws it).
 const SKY_ANIMATION_MAX_NODES = 3000;
 
-const withAlpha = (color, a) => {
-  const hex = /^#([0-9a-f]{6})$/i.exec(color);
-  if (!hex) return `rgba(255, 255, 255, ${a})`;
-  const n = parseInt(hex[1], 16);
-  return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
-};
-
-// A star: white core, colored halo fading out. Drawn at twice the node's radius.
-const GLOWS = new Map();
-function glowSprite(color) {
-  if (!GLOWS.has(color)) {
-    const canvas = document.createElement('canvas');
-    canvas.width = SPRITE_SIZE;
-    canvas.height = SPRITE_SIZE;
-    const c = canvas.getContext('2d');
-    const half = SPRITE_SIZE / 2;
-    const g = c.createRadialGradient(half, half, 0, half, half, half);
-    g.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    g.addColorStop(0.16, 'rgba(255, 255, 255, 0.95)');
-    g.addColorStop(0.3, withAlpha(color, 0.95));
-    g.addColorStop(0.55, withAlpha(color, 0.28));
-    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    c.fillStyle = g;
-    c.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
-    GLOWS.set(color, canvas);
-  }
-  return GLOWS.get(color);
-}
-
-// Each folder keeps its own color (from its path): its galaxy, and the sky while inside it.
-function folderHue(folder) {
-  let h = 0;
-  for (let i = 0; i < folder.length; i++) h = (Math.imul(h, 31) + folder.charCodeAt(i)) >>> 0;
-  return h % 360;
-}
-
-// A spiral galaxy seen from above: bright core, two arms of stars, soft disc. Drawn at 1.6x the
-// node's radius and turned a little every frame.
-const GALAXIES = new Map();
-function galaxySprite(hue) {
-  if (!GALAXIES.has(hue)) {
-    const size = 160;
-    const half = size / 2;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const c = canvas.getContext('2d');
-    const disc = c.createRadialGradient(half, half, 0, half, half, half);
-    disc.addColorStop(0, 'rgba(255, 250, 235, 1)');
-    disc.addColorStop(0.12, `hsla(${hue}, 90%, 85%, 0.9)`);
-    disc.addColorStop(0.45, `hsla(${hue}, 70%, 60%, 0.22)`);
-    disc.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    c.fillStyle = disc;
-    c.fillRect(0, 0, size, size);
-    const rand = (() => {
-      let a = hue * 7919 + 1;
-      return () => {
-        a = (a * 16807) % 2147483647;
-        return a / 2147483647;
-      };
-    })();
-    for (let arm = 0; arm < 2; arm++) {
-      for (let i = 0; i < 140; i++) {
-        const t = i / 140;
-        const angle = arm * Math.PI + t * Math.PI * 2.6;
-        const dist = 6 + t * (half - 10);
-        const spread = 3 + t * 9;
-        const x = half + Math.cos(angle) * dist + (rand() - 0.5) * spread;
-        const y = half + Math.sin(angle) * dist + (rand() - 0.5) * spread;
-        c.globalAlpha = (1 - t) * 0.8 + 0.15;
-        c.fillStyle = rand() < 0.3 ? '#ffffff' : `hsl(${hue}, 85%, ${70 + rand() * 20}%)`;
-        c.fillRect(x, y, 1 + rand() * 1.4, 1 + rand() * 1.4);
-      }
-    }
-    GALAXIES.set(hue, canvas);
-  }
-  return GALAXIES.get(hue);
-}
-
-// A sun: white-hot center, yellow body, orange corona. Drawn at 2.6x the node's radius.
-let SUN = null;
-function sunSprite() {
-  if (!SUN) {
-    SUN = document.createElement('canvas');
-    SUN.width = SPRITE_SIZE * 2;
-    SUN.height = SPRITE_SIZE * 2;
-    const c = SUN.getContext('2d');
-    const half = SPRITE_SIZE;
-    const g = c.createRadialGradient(half, half, 0, half, half, half);
-    g.addColorStop(0, 'rgba(255, 255, 245, 1)');
-    g.addColorStop(0.2, 'rgba(255, 236, 160, 1)');
-    g.addColorStop(0.36, 'rgba(255, 196, 70, 0.95)');
-    g.addColorStop(0.5, 'rgba(255, 140, 40, 0.4)');
-    g.addColorStop(0.75, 'rgba(255, 110, 30, 0.1)');
-    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    c.fillStyle = g;
-    c.fillRect(0, 0, half * 2, half * 2);
-  }
-  return SUN;
-}
-
-// One antialiased circle per color, scaled to each node's size when drawn.
-const SPRITES = new Map();
-function sprite(color) {
-  if (!SPRITES.has(color)) {
-    const canvas = document.createElement('canvas');
-    canvas.width = SPRITE_SIZE;
-    canvas.height = SPRITE_SIZE;
-    const c = canvas.getContext('2d');
-    c.fillStyle = color;
-    c.beginPath();
-    c.arc(SPRITE_SIZE / 2, SPRITE_SIZE / 2, SPRITE_SIZE / 2 - 1, 0, Math.PI * 2);
-    c.fill();
-    SPRITES.set(color, canvas);
-  }
-  return SPRITES.get(color);
-}
-
 export const DEFAULT_FORCES = { center: 0.04, repel: 90, link: 0.6, distance: 40, spin: 1, spacing: 1 };
 const GROUP_COLORS = ['#e9973f', '#4fb3a9', '#e05d6f', '#5b8def', '#b07de8', '#7cc56b'];
+
+// The 3D Graph View bundle (three.js, vendor/graph3d) is loaded once, the first time it is used.
+let graph3dReady = null;
+function loadGraph3D() {
+  graph3dReady ??= new Promise((resolve, reject) => {
+    const script = el('script', { src: 'vendor/graph3d/graph3d.js' });
+    script.addEventListener('load', () => resolve(window.DocxGraph3D));
+    script.addEventListener('error', () => {
+      graph3dReady = null;
+      script.remove();
+      reject(new Error('Não foi possível carregar o grafo 3D'));
+    });
+    document.head.append(script);
+  });
+  return graph3dReady;
+}
 
 function loadOptions(key) {
   const defaults = {
     attachments: true, unresolved: false, orphans: true, tags: false, arrows: false, search: '',
-    groups: [], depth: 1, nodeSize: 1, constellation: true, traffic: true, trafficLevel: 1, gravity: true, pinOnDrag: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
+    groups: [], depth: 1, nodeSize: 1, mode: '2d', autoRotate: true, constellation: true, traffic: true, trafficLevel: 1, gravity: true, pinOnDrag: true, galaxies: true, folder: '', forces: { ...DEFAULT_FORCES }, open: { panel: true, filters: true, groups: false, display: false, forces: false },
   };
   try {
     const saved = JSON.parse(localStorage.getItem(key)) ?? {};
@@ -188,6 +93,7 @@ function loadOptions(key) {
       groups: Array.isArray(saved.groups) ? saved.groups.filter((g) => typeof g?.query === 'string' && /^#[0-9a-f]{6}$/i.test(g.color)) : [],
       forces: { ...DEFAULT_FORCES, ...saved.forces },
       folder: typeof saved.folder === 'string' ? saved.folder : '',
+      mode: saved.mode === '3d' ? '3d' : '2d',
       open: { ...defaults.open, ...saved.open },
     };
   } catch {
@@ -202,6 +108,8 @@ function loadOptions(key) {
 // the trail at the top, or a double click on empty space, goes back up (see graph-galaxy.js).
 // With `local`, it is the side panel's local graph: the last active note and its neighbours,
 // without header or filter panel.
+// The global graph can also be seen in 3D (the 2D/3D switch): the worker lays it out in space and
+// graph3d/scene.js draws it with WebGL under this canvas, which then only gets labels and ships.
 export class GraphView {
   constructor({ workspace, store, local = false }) {
     this.workspace = workspace;
@@ -234,7 +142,11 @@ export class GraphView {
     this.ctx = this.canvas.getContext('2d');
     this.controls = el('div', { class: 'graph-controls' });
     this.trail = el('div', { class: 'graph-trail' });
-    this.content = el('div', { class: 'view-content graph-content' }, this.canvas, this.trail, this.controls);
+    // 3D: the WebGL scene (null in 2D), and where the nodes were when the mode was switched.
+    this.scene3d = null;
+    this.carry = null;
+    this.modeSwitch = local ? null : el('div', { class: 'graph-mode', role: 'group', 'aria-label': 'Modo do grafo' });
+    this.content = el('div', { class: 'view-content graph-content' }, this.canvas, this.trail, this.controls, this.modeSwitch);
     this.renderControls();
     this.el = el('div', { class: `view graph-view${local ? ' is-local' : ''}` },
       local ? null : el('div', { class: 'view-header' }, el('div', { class: 'view-header-title' }, el('span', { class: 'view-header-title-text', text: 'Visualização em gráfico' }))),
@@ -251,8 +163,12 @@ export class GraphView {
     this.canvas.addEventListener('lostpointercapture', () => this.endDrag());
     this.canvas.addEventListener('pointerleave', () => this.setHover(-1));
     this.canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
-    this.canvas.addEventListener('dblclick', (e) => {
-      if (this.galaxiesOn && this.options.folder && this.nodeAt(e) < 0) this.showFolder(parentFolder(this.options.folder));
+    this.canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e));
+    // In 3D the right button pans the camera: no context menu on the graph.
+    this.canvas.addEventListener('contextmenu', (e) => {
+      if (!this.is3D) return;
+      e.preventDefault();
+      e.stopPropagation();
     });
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -262,7 +178,9 @@ export class GraphView {
     store.addEventListener('change', this.onStoreChange);
     store.addEventListener('links', this.onStoreChange);
     if (local) workspace.addEventListener('change', this.onStoreChange);
-    this.update();
+    this.renderModeSwitch();
+    if (!local && this.options.mode === '3d') this.setMode('3d');
+    else this.update();
   }
 
   get type() { return 'graph'; }
@@ -393,6 +311,10 @@ export class GraphView {
         this.isLocal ? null : visual('traffic', 'Naves e asteroides no céu', () => this.requestDraw()),
         this.isLocal ? null : this.trafficSlider(save),
         this.isLocal ? null : toggle('galaxies', 'Galáxias (pastas com sol)'),
+        this.isLocal ? null : visual('autoRotate', 'Girar sozinho quando parado (3D)', () => {
+          this.scene3d?.touch();
+          this.requestDraw();
+        }),
         toggle('arrows', 'Setas'),
         slider('Tamanho dos nós', this.options.nodeSize, 0.5, 3, 0.1, (v) => {
           this.options.nodeSize = v;
@@ -439,6 +361,115 @@ export class GraphView {
 
   get galaxiesOn() {
     return !this.isLocal && this.options.galaxies;
+  }
+
+  get is3D() {
+    return Boolean(this.scene3d);
+  }
+
+  get dims() {
+    return this.is3D ? 3 : 2;
+  }
+
+  get layoutKey() {
+    return this.is3D ? LAYOUT_KEY_3D : LAYOUT_KEY;
+  }
+
+  // The 2D/3D switch, bottom left of the global graph.
+  renderModeSwitch() {
+    if (!this.modeSwitch) return;
+    const want = this.options.mode;
+    const button = (mode, label, title) => el('button', {
+      class: `graph-mode-button${want === mode ? ' is-active' : ''}`,
+      text: label,
+      title,
+      'aria-pressed': String(want === mode),
+      onclick: () => this.setMode(mode),
+    });
+    this.modeSwitch.replaceChildren(
+      button('2d', '2D', 'Grafo plano'),
+      button('3d', '3D', 'Grafo em 3D: arraste para girar, roda para zoom, botão direito para mover, clique duplo para voar até um nó'),
+    );
+  }
+
+  // Switches between the flat graph and the 3D one. The layout of the mode being left is saved;
+  // the other mode's saved layout comes back, or the current one is carried over (opening up in
+  // depth). Without WebGL the graph stays flat.
+  // persist: false keeps the user's choice (a GPU reset falls back to 2D only for now). A click on
+  // the switch while the 3D bundle is loading is applied once the first switch is done.
+  async setMode(mode, { persist = true } = {}) {
+    if (this.isLocal || this.destroyed) return;
+    const to3D = mode === '3d';
+    if (persist) {
+      this.options.mode = to3D ? '3d' : '2d';
+      this.saveOptions();
+      this.renderModeSwitch();
+    }
+    if (this.switching) {
+      this.pendingMode = mode;
+      return;
+    }
+    if (to3D === this.is3D && this.shownFolder !== null) return;
+    this.switching = true;
+    try {
+      let lib = null;
+      if (to3D && !this.scene3d) {
+        try {
+          lib = await loadGraph3D();
+        } catch (err) {
+          lib = err;
+        }
+        if (this.destroyed) return;
+      }
+      // Where the nodes are now (and which are pinned), for the other mode to start from.
+      this.saveLayout();
+      const carry = new Map(this.nodes.map((n, i) => [n.id, {
+        x: this.positions[i * this.dims], y: this.positions[i * this.dims + 1], pinned: this.pinnedNodes.has(n.id),
+      }]));
+      if (to3D && !this.scene3d) {
+        try {
+          if (lib instanceof Error || !lib) throw lib ?? new Error('Grafo 3D indisponível');
+          const scene = new lib.Graph3D({
+            host: this.content,
+            onContextLost: () => {
+              if (this.scene3d === scene) this.on3DLost();
+            },
+          });
+          this.scene3d = scene;
+        } catch (err) {
+          console.error(err);
+          notice('Não deu para abrir o grafo em 3D neste computador (sem WebGL). O grafo continua em 2D.', { error: true });
+          this.options.mode = '2d';
+          this.saveOptions();
+          this.renderModeSwitch();
+        }
+      } else if (!to3D && this.scene3d) {
+        this.scene3d.dispose();
+        this.scene3d = null;
+      }
+      this.content.classList.toggle('is-3d', this.is3D);
+      this.canvas.dataset.mode = this.is3D ? '3d' : '2d';
+      this.carry = carry;
+      this.shownFolder = null;
+      this.signature = '';
+      this.fitted = false;
+      this.hover = -1;
+      this.width = 0;
+      this.resize();
+      this.update();
+    } finally {
+      this.switching = false;
+    }
+    const pending = this.pendingMode;
+    this.pendingMode = null;
+    if (pending && (pending === '3d') !== this.is3D) this.setMode(pending, { persist: false });
+  }
+
+  on3DLost() {
+    if (this.destroyed) return;
+    notice('O 3D parou de funcionar (a placa de vídeo reiniciou). O grafo voltou para 2D por enquanto.', { error: true });
+    if (this.switching) this.pendingMode = '2d';
+    else this.setMode('2d', { persist: false });
   }
 
   // Enters a galaxy ('' = the vault root). The new folder is framed as it settles.
@@ -502,19 +533,29 @@ export class GraphView {
       saved = recallLayout(this.readLayouts(), folder);
       this.pinnedNodes = new Set();
       this.nodes = [];
-      if (saved?.cam) {
-        this.cam = saved.cam;
+      if (saved?.cam && this.is3D === ('distance' in saved.cam)) {
+        if (this.is3D) this.scene3d.setOrbit(saved.cam);
+        else this.cam = saved.cam;
         this.fitted = true;
       }
     }
     this.shownFolder = folder;
+    const D = this.dims;
+    const carry = this.carry;
+    this.carry = null;
     const old = new Map(this.nodes.map((n, i) => [n.id, i]));
-    const positions = new Float32Array(nodes.length * 2);
+    const positions = new Float32Array(nodes.length * D);
     const restored = nodes.map((n, i) => {
       const j = old.get(n.id);
-      const back = j === undefined ? saved?.nodes.get(n.id) : null;
-      positions[i * 2] = j === undefined ? back?.x ?? 0 : this.positions[j * 2];
-      positions[i * 2 + 1] = j === undefined ? back?.y ?? 0 : this.positions[j * 2 + 1];
+      if (j !== undefined) {
+        for (let k = 0; k < D; k++) positions[i * D + k] = this.positions[j * D + k];
+        return null;
+      }
+      // Saved in this mode, or (just switched) where it was in the other mode.
+      const back = saved?.nodes.get(n.id) ?? carry?.get(n.id) ?? null;
+      positions[i * D] = back?.x ?? 0;
+      positions[i * D + 1] = back?.y ?? 0;
+      if (D === 3) positions[i * D + 2] = back?.z ?? 0;
       if (back?.pinned) this.pinnedNodes.add(n.id);
       return back;
     });
@@ -534,12 +575,19 @@ export class GraphView {
     this.canvas.dataset.nodes = nodes.length;
     this.canvas.dataset.links = links.length;
     this.canvas.dataset.galaxies = nodes.filter((n) => n.type === 'galaxy').length;
+    if (this.is3D) {
+      this.scene3d.setGraph(nodes, this.linkIndex);
+      this.scene3d.setPositions(positions);
+    }
     this.worker.postMessage({
       type: 'graph',
       gen: this.gen,
+      dims: D,
       nodes: nodes.map((n, i) => ({
         id: n.id, degree: n.degree, type: n.type, radius: n.radius, anchor: n.anchor,
-        ...(restored[i] ? { x: restored[i].x, y: restored[i].y, pinned: restored[i].pinned } : {}),
+        ...(restored[i] ? {
+          x: restored[i].x, y: restored[i].y, ...(Number.isFinite(restored[i].z) ? { z: restored[i].z } : {}), pinned: restored[i].pinned,
+        } : {}),
       })),
       links,
     });
@@ -586,6 +634,7 @@ export class GraphView {
     // starts zoomed out, where labels are hidden and drawing stays cheap).
     if (data.type === 'tick') {
       this.positions = data.positions;
+      this.scene3d?.setPositions(data.positions);
       if (!this.fitted) this.fit({ auto: true });
       this.requestDraw();
       this.scheduleLayoutSave();
@@ -599,7 +648,7 @@ export class GraphView {
 
   readLayouts() {
     try {
-      return JSON.parse(localStorage.getItem(LAYOUT_KEY));
+      return JSON.parse(localStorage.getItem(this.layoutKey));
     } catch {
       return null;
     }
@@ -611,10 +660,10 @@ export class GraphView {
     this.layoutTimer = 0;
     if (this.isLocal || this.shownFolder === null || !this.nodes.length) return;
     const memory = rememberLayout(this.readLayouts(), this.shownFolder, {
-      ids: this.nodes.map((n) => n.id), positions: this.positions, pinned: this.pinnedNodes, cam: this.cam,
+      ids: this.nodes.map((n) => n.id), positions: this.positions, pinned: this.pinnedNodes, cam: this.is3D ? this.scene3d.getOrbit() : this.cam, dims: this.dims,
     });
     try {
-      localStorage.setItem(LAYOUT_KEY, JSON.stringify(memory));
+      localStorage.setItem(this.layoutKey, JSON.stringify(memory));
     } catch {
       // The layout just won't be remembered.
     }
@@ -651,6 +700,7 @@ export class GraphView {
     this.canvas.height = Math.round(h * dpr);
     this.canvas.style.width = `${w}px`;
     this.canvas.style.height = `${h}px`;
+    this.scene3d?.resize(w, h, dpr);
     this.requestDraw();
   }
 
@@ -658,6 +708,12 @@ export class GraphView {
   // following the layout.
   fit({ auto = false } = {}) {
     if (!this.nodes.length || !this.width) return;
+    if (this.is3D) {
+      this.scene3d.fit();
+      if (!auto) this.fitted = true;
+      this.requestDraw();
+      return;
+    }
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
@@ -685,17 +741,23 @@ export class GraphView {
 
   nodeAt(event) {
     const p = this.local(event);
+    if (this.is3D) return this.scene3d.pick(p.x, p.y);
     const w = toWorld(this.cam, p.x, p.y);
     return hitTest(this.nodes, this.positions, w.x, w.y, this.cam.k);
   }
 
   onPointerDown(event) {
-    if (event.button !== 0) return;
+    // 3D: the right button (or Shift + left) slides the camera instead of turning it.
+    const pan = this.is3D && (event.button === 2 || (event.button === 0 && event.shiftKey));
+    if (event.button !== 0 && !pan) return;
+    // A new press cancels a click still waiting for its double click.
+    clearTimeout(this.clickTimer);
     this.fitted = true;
+    this.scene3d?.touch();
     const p = this.local(event);
     // The node is kept by id: the graph can be rebuilt (a save, a sync) in the middle of a drag.
-    const index = this.nodeAt(event);
-    this.pointer = { id: index >= 0 ? this.nodes[index].id : null, start: p, last: p, moved: false };
+    const index = pan ? -1 : this.nodeAt(event);
+    this.pointer = { id: index >= 0 ? this.nodes[index].id : null, start: p, last: p, moved: false, pan };
     this.canvas.setPointerCapture(event.pointerId);
   }
 
@@ -708,7 +770,22 @@ export class GraphView {
     }
     if (!drag.moved && Math.hypot(p.x - drag.start.x, p.y - drag.start.y) < DRAG_THRESHOLD_PX) return;
     drag.moved = true;
-    if (drag.id !== null) {
+    if (this.is3D) {
+      // A node moves on the plane facing the camera; empty space turns (or slides) the view.
+      if (drag.id !== null) {
+        const index = this.nodes.findIndex((n) => n.id === drag.id);
+        if (index >= 0) {
+          const w = this.scene3d.dragPoint(index, p.x, p.y);
+          this.worker.postMessage({ type: 'drag', id: drag.id, x: w.x, y: w.y, z: w.z });
+        }
+        this.scene3d.touch();
+      } else if (drag.pan) {
+        this.scene3d.pan(p.x - drag.last.x, p.y - drag.last.y);
+      } else {
+        this.scene3d.rotate(p.x - drag.last.x, p.y - drag.last.y);
+      }
+      this.requestDraw();
+    } else if (drag.id !== null) {
       const w = toWorld(this.cam, p.x, p.y);
       this.worker.postMessage({ type: 'drag', id: drag.id, x: w.x, y: w.y });
     } else {
@@ -727,6 +804,17 @@ export class GraphView {
     const node = this.nodes.find((n) => n.id === drag.id);
     if (!node) return;
     const newTab = event.ctrlKey || event.metaKey;
+    // 3D: wait a moment, the click may be the first half of a double click (fly to the node).
+    if (this.is3D) {
+      clearTimeout(this.clickTimer);
+      this.clickTimer = setTimeout(() => this.activate(node, newTab), CLICK_DELAY_MS);
+      return;
+    }
+    this.activate(node, newTab);
+  }
+
+  // What a click on a node does: enter a galaxy, search a tag, open (or create) the note.
+  activate(node, newTab) {
     if (node.type === 'galaxy') this.showFolder(node.folder);
     else if (node.type === 'tag') this.workspace.searchFor(`tag:${node.id}`);
     else if (node.type === 'unresolved') this.workspace.openLink(node.id, null, { newTab });
@@ -748,9 +836,30 @@ export class GraphView {
     return drag;
   }
 
+  // Double click: in 3D, on a node, the camera flies to it; on empty space inside a galaxy, back
+  // up to the folder above (both modes).
+  onDoubleClick(event) {
+    const index = this.nodeAt(event);
+    if (this.is3D && index >= 0) {
+      clearTimeout(this.clickTimer);
+      this.fitted = true;
+      this.scene3d.flyTo(index, this.radiusOf(index));
+      this.requestDraw();
+      this.scheduleLayoutSave();
+      return;
+    }
+    if (this.galaxiesOn && this.options.folder && index < 0) this.showFolder(parentFolder(this.options.folder));
+  }
+
   onWheel(event) {
     event.preventDefault();
     this.fitted = true;
+    if (this.is3D) {
+      this.scene3d.zoom(Math.exp(-event.deltaY * 0.0015));
+      this.requestDraw();
+      this.scheduleLayoutSave();
+      return;
+    }
     const p = this.local(event);
     this.cam = zoomAt(this.cam, Math.exp(-event.deltaY * 0.0015), p.x, p.y);
     this.requestDraw();
@@ -782,6 +891,7 @@ export class GraphView {
     COLORS.link = v('--graph-link', COLORS.link);
     COLORS.label = v('--graph-label', COLORS.label);
     COLORS.highlight = v('--interactive-accent', COLORS.highlight);
+    COLORS.background = v('--background-primary', COLORS.background);
   }
 
   draw() {
@@ -790,6 +900,10 @@ export class GraphView {
     } = this;
     if (!this.width) return;
     this.themeColors();
+    if (this.is3D) {
+      this.draw3D();
+      return;
+    }
     const sky = this.options.constellation;
     const time = performance.now() / 16.667;
     const palette = sky ? SKY : COLORS;
@@ -957,6 +1071,39 @@ export class GraphView {
     if (sky && nodes.length <= SKY_ANIMATION_MAX_NODES) this.requestDraw();
   }
 
+  // The 3D scene draws itself (and the labels and ships on this canvas); it says whether something
+  // keeps moving (twinkling, turning, flying), and then asks for the next frame.
+  draw3D() {
+    const sky = this.options.constellation;
+    const palette = sky ? SKY : COLORS;
+    const moving = this.scene3d.render({
+      hover: this.hover,
+      neighbours: this.neighbours,
+      pinned: this.pinnedNodes,
+      folder: this.galaxiesOn ? this.options.folder : '',
+      overlay: this.ctx,
+      traffic: this.traffic,
+      trafficOn: this.options.traffic,
+      trafficLevel: this.options.trafficLevel,
+      autoRotate: this.options.autoRotate,
+      busy: Boolean(this.pointer),
+      reducedMotion: REDUCED_MOTION.matches,
+      style: {
+        sky,
+        palette,
+        highlight: COLORS.highlight,
+        groupColors: this.options.groups.map((g) => g.color),
+        nodeSize: this.options.nodeSize,
+        background: COLORS.background,
+        label: palette.label,
+        link: palette.link,
+        ship: SKY.ship,
+      },
+    });
+    // Big graphs stop animating on their own (like the flat sky), unless turning or flying.
+    if (moving && (this.nodes.length <= SKY_ANIMATION_MAX_NODES || this.options.autoRotate || this.scene3d.flight)) this.requestDraw();
+  }
+
   // Night sky in screen space: a deep blue gradient and twinkling background stars that move a
   // little with the camera (farther stars move less).
   drawSky(time) {
@@ -1046,7 +1193,11 @@ export class GraphView {
 
   destroy() {
     this.saveLayout();
+    this.destroyed = true;
     this.visible = false;
+    clearTimeout(this.clickTimer);
+    this.scene3d?.dispose();
+    this.scene3d = null;
     cancelAnimationFrame(this.frame);
     clearTimeout(this.updateTimer);
     this.resizeObserver.disconnect();

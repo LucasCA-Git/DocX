@@ -78,6 +78,13 @@ histórico de versões.
   sair e entrar de novo. Com **Fixar nós ao arrastar** (em Forças), o nó fica onde você soltou: um
   documento mantém a distância do sol e só gira em volta dele; **Soltar nós fixos** libera todos.
   O controle **Espaçamento** deixa o grafo mais separado ou mais junto.
+- **Grafo em 3D**: o botão **2D / 3D**, no canto inferior esquerdo do grafo, transforma a constelação
+  em espaço de verdade. Arraste no vazio para **girar**, use a roda para **zoom**, o botão direito
+  (ou Shift + arrastar) para **mover** e dê **duplo clique num nó para voar até ele**. Um clique abre
+  a nota e, numa galáxia, entra na pasta, como no 2D. Galáxias inclinadas, sóis, naves e asteroides,
+  estrelas de fundo e neblina de profundidade vão junto, e os nomes ficam sempre virados para você.
+  Parado por alguns segundos, o grafo **gira devagar sozinho** (dá para desligar em Exibição). O
+  layout e a câmera do 3D também são lembrados, separados do 2D.
 - Links feitos dentro de **canvas, desenhos e diagramas** (cartões de nota, `[[Nota]]` em textos,
   links de elementos) entram no grafo e nos backlinks, como os de qualquer nota.
 - **Canvas** (`.canvas`, formato aberto JSON Canvas): cartões de texto, nota, imagem e link, com

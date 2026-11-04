@@ -59,6 +59,19 @@ if (!fs.existsSync(path.join(excalidrawOut, 'fonts'))) {
   fs.cpSync(path.join(excalidrawPkg, 'fonts'), path.join(excalidrawOut, 'fonts'), { recursive: true });
 }
 
+// The 3D Graph View (three.js), loaded on demand like the drawing editor.
+esbuild.buildSync({
+  entryPoints: [path.join(src, 'graph3d', 'entry.js')],
+  bundle: true,
+  outfile: path.join(vendor, 'graph3d', 'graph3d.js'),
+  format: 'iife',
+  platform: 'browser',
+  target: 'chrome120',
+  minify: true,
+  legalComments: 'linked',
+  logLevel: 'warning',
+});
+
 // Diagram editor (draw.io webapp), served by the main process under docx-drawio://app/.
 vendorDrawio(path.join(vendor, 'drawio')).catch((err) => {
   console.error(err.message);

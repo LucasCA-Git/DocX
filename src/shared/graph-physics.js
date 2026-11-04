@@ -60,6 +60,59 @@ function fixedOrbitStep(dx, dy, rest, { spin }) {
   return { dx: Math.cos(next) * rest - dx, dy: Math.sin(next) * rest - dy };
 }
 
+// ---------- 3D ----------
+// In 3D the galaxy turns around the vertical axis (Y): the orbit plane is XZ, so the same speed
+// curve as the flat graph applies to (x, z). Planets settle into a flat disc around their sun.
+const FLATTEN = 0.03;
+
+function orbitalNudge3(x, y, z, { spin, wander, t, phase }) {
+  const turn = orbitalNudge(x, z, { spin, wander: 0, t, phase });
+  let vx = turn.vx;
+  let vy = 0;
+  let vz = turn.vy;
+  if (wander > 0) {
+    const w = (ORBIT.wander * Math.min(1, wander)) / Math.sqrt(3);
+    vx += w * Math.sin(t * 0.011 + phase) * Math.cos(t * 0.004 + phase * 1.7);
+    vy += w * Math.sin(t * 0.007 + phase * 2.1) * Math.cos(t * 0.003 + phase * 0.4);
+    vz += w * Math.cos(t * 0.009 + phase * 1.3) * Math.sin(t * 0.005 + phase * 0.6 + 1);
+  }
+  return { vx, vy, vz };
+}
+
+const planetSpeed = (spin, d) => (spin > 0 ? Math.min(ORBIT.planetSpeed, ORBIT.planetSpeed * spin * 0.5 * Math.sqrt(60 / Math.max(d, 30))) : 0);
+
+// A planet at (dx, dy, dz) from its sun: a 3D spring to its orbit radius, a horizontal push around
+// the sun (same direction as orbitalNudge3) and a gentle pull down to the sun's disc.
+function systemPull3(dx, dy, dz, rest, { spin }) {
+  const d = Math.hypot(dx, dy, dz);
+  if (d < 1e-6) return { vx: 0, vy: 0, vz: 0 };
+  const radial = (rest - d) * ORBIT.pull;
+  let vx = (dx / d) * radial;
+  let vy = (dy / d) * radial - dy * FLATTEN;
+  let vz = (dz / d) * radial;
+  const h = Math.hypot(dx, dz);
+  const speed = planetSpeed(spin, d);
+  if (h > 1e-6 && speed) {
+    vx += (dz / h) * speed;
+    vz -= (dx / h) * speed;
+  }
+  if (Math.abs(vy) < 1e-12) vy = 0;
+  return { vx, vy, vz };
+}
+
+// A pinned planet in 3D: it keeps its distance to the sun and its height angle, and only turns
+// around the sun's vertical axis. Returns the move for this tick.
+function fixedOrbitStep3(dx, dy, dz, rest, { spin }) {
+  const d = Math.hypot(dx, dy, dz);
+  const scale = d < 1e-6 ? 0 : rest / d;
+  const h = Math.hypot(dx, dz) * scale;
+  const y = d < 1e-6 ? 0 : dy * scale;
+  const flat = d < 1e-6 ? rest : h;
+  const angle = Math.hypot(dx, dz) < 1e-6 ? 0 : Math.atan2(dz, dx);
+  const next = angle - (planetSpeed(spin, rest) * 1.5) / Math.max(rest, 1);
+  return { dx: Math.cos(next) * flat - dx, dy: y - dy, dz: Math.sin(next) * flat - dz };
+}
+
 // Small, fast seeded generator (mulberry32): the same sky every time.
 function random(seed) {
   let a = seed >>> 0;
@@ -89,10 +142,29 @@ function makeStarfield(count, seed = 1) {
   return stars;
 }
 
+// Background stars for the 3D sky: on a shell between 0.6 and 1 of the sky radius, all around.
+function makeStarfield3(count, seed = 1) {
+  const rand = random(seed);
+  const stars = [];
+  for (let i = 0; i < count; i++) {
+    const u = rand() * 2 - 1;
+    const a = rand() * Math.PI * 2;
+    const r = 0.6 + rand() * 0.4;
+    const s = Math.sqrt(1 - u * u) * r;
+    const big = rand() < 0.08;
+    stars.push({
+      x: Math.cos(a) * s, y: u * r, z: Math.sin(a) * s, size: big ? 2.2 + rand() * 1.4 : 0.8 + rand() * 1.2, base: 0.2 + rand() * 0.8, phase: rand() * Math.PI * 2,
+    });
+  }
+  return stars;
+}
+
 // Brightness of a twinkling star at time t (seconds × 60, i.e. frames).
 function twinkle(base, phase, t) {
   const v = base * (0.7 + 0.3 * Math.sin(t * 0.045 + phase) * Math.sin(t * 0.017 + phase * 2));
   return Math.min(1, Math.max(0, v));
 }
 
-module.exports = { ORBIT, orbitalNudge, systemPull, orbitRadius, fixedOrbitStep, makeStarfield, twinkle };
+module.exports = {
+  ORBIT, orbitalNudge, systemPull, orbitRadius, fixedOrbitStep, makeStarfield, twinkle, orbitalNudge3, systemPull3, fixedOrbitStep3, makeStarfield3,
+};

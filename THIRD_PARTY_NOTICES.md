@@ -21,7 +21,14 @@ O DocX inclui os componentes abaixo, cada um sob a sua própria licença.
 - As licenças das dependências incluídas no pacote estão em
   `vendor/excalidraw/excalidraw.js.LEGAL.txt`.
 
+## three.js (grafo em 3D)
+
+- Projeto: https://github.com/mrdoob/three.js (`three` 0.186.0)
+- Copyright © 2010-2026 three.js authors
+- Licença: MIT
+- Incluído em `vendor/graph3d/graph3d.js`, carregado só quando o grafo é aberto em 3D.
+
 ## Demais bibliotecas
 
 React e React DOM (MIT), CodeMirror (MIT), marked (MIT), DOMPurify (Apache-2.0 / MPL-2.0),
-KaTeX (MIT), Mermaid (MIT), d3-force (ISC), Lucide (ISC) e Electron (MIT).
+KaTeX (MIT), Mermaid (MIT), d3-force-3d (MIT), Lucide (ISC) e Electron (MIT).

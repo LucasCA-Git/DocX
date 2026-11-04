@@ -151,7 +151,7 @@ function hitTest(nodes, positions, wx, wy, k) {
 
 // Start positions: known nodes keep theirs, a new node starts at the middle of its known
 // neighbours (so a new link grows out of the right place), otherwise somewhere near the centre.
-function placeNewNodes(nodes, links, known, random = Math.random) {
+function placeNewNodes(nodes, links, known, random = Math.random, dims = 2) {
   const neighbours = new Map();
   for (const { source, target } of links) {
     if (!neighbours.has(source)) neighbours.set(source, []);
@@ -166,18 +166,48 @@ function placeNewNodes(nodes, links, known, random = Math.random) {
     cy += p.y / known.size;
   }
   const spread = 40 + Math.sqrt(nodes.length) * 20;
+  if (dims !== 3) {
+    return nodes.map(({ id }) => {
+      const at = known.get(id);
+      if (at) return { id, x: at.x, y: at.y };
+      const near = (neighbours.get(id) ?? []).map((n) => known.get(n)).filter(Boolean);
+      if (near.length) {
+        const x = near.reduce((s, p) => s + p.x, 0) / near.length;
+        const y = near.reduce((s, p) => s + p.y, 0) / near.length;
+        return { id, x: x + (random() - 0.5) * 20, y: y + (random() - 0.5) * 20 };
+      }
+      const angle = random() * Math.PI * 2;
+      const dist = Math.sqrt(random()) * spread;
+      return { id, x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist };
+    });
+  }
+  // 3D: a position known only in 2D (coming from the flat graph) gets a depth, so the layout
+  // opens up into a cloud instead of staying a flat sheet.
+  const depthOf = new Map();
+  const depth = (id, at) => {
+    if (Number.isFinite(at.z)) return at.z;
+    if (!depthOf.has(id)) depthOf.set(id, (random() - 0.5) * spread);
+    return depthOf.get(id);
+  };
   return nodes.map(({ id }) => {
     const at = known.get(id);
-    if (at) return { id, x: at.x, y: at.y };
-    const near = (neighbours.get(id) ?? []).map((n) => known.get(n)).filter(Boolean);
+    if (at) return { id, x: at.x, y: at.y, z: depth(id, at) };
+    const near = (neighbours.get(id) ?? []).filter((n) => known.has(n));
     if (near.length) {
-      const x = near.reduce((s, p) => s + p.x, 0) / near.length;
-      const y = near.reduce((s, p) => s + p.y, 0) / near.length;
-      return { id, x: x + (random() - 0.5) * 20, y: y + (random() - 0.5) * 20 };
+      const avg = (f) => near.reduce((s, n) => s + f(n), 0) / near.length;
+      return {
+        id,
+        x: avg((n) => known.get(n).x) + (random() - 0.5) * 20,
+        y: avg((n) => known.get(n).y) + (random() - 0.5) * 20,
+        z: avg((n) => depth(n, known.get(n))) + (random() - 0.5) * 20,
+      };
     }
+    // Anywhere in a ball around the middle of what is known.
+    const u = random() * 2 - 1;
     const angle = random() * Math.PI * 2;
-    const dist = Math.sqrt(random()) * spread;
-    return { id, x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist };
+    const dist = Math.cbrt(random()) * spread;
+    const ring = Math.sqrt(1 - u * u) * dist;
+    return { id, x: cx + Math.cos(angle) * ring, y: cy + u * dist, z: Math.sin(angle) * ring };
   });
 }
 

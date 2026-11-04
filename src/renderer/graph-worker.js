@@ -1,18 +1,24 @@
-import { forceSimulation, forceLink, forceManyBody, forceX, forceY, forceCollide } from 'd3-force';
+import {
+  forceSimulation, forceLink, forceManyBody, forceX, forceY, forceZ, forceCollide,
+} from 'd3-force-3d';
 import { placeNewNodes, nodeRadius } from '../shared/graph-model';
-import { orbitalNudge, systemPull, orbitRadius, fixedOrbitStep } from '../shared/graph-physics';
+import {
+  orbitalNudge, systemPull, orbitRadius, fixedOrbitStep, orbitalNudge3, systemPull3, fixedOrbitStep3,
+} from '../shared/graph-physics';
 
-// Force simulation off the UI thread. Receives the graph, sends node
-// positions as a Float32Array [x0, y0, x1, y1, …] in the order the nodes were given.
+// Force simulation off the UI thread, flat (dims 2) or in space (dims 3). Receives the graph,
+// sends node positions as a Float32Array [x0, y0, (z0,) x1, y1, (z1,) …] in the order the nodes
+// were given. In 3D the orbits turn around the vertical axis (Y).
 //
-// in:  { type: 'graph', gen, nodes: [{ id, degree, type?, radius?, anchor?, x?, y?, pinned? }], links: [{ source, target }] }
-//      (galaxy view: `anchor` is the sun a node orbits; x/y/pinned: where the user left it)
-//      { type: 'drag', id, x, y } / { type: 'release', id, pin } / { type: 'unpin-all' }
+// in:  { type: 'graph', gen, dims?, nodes: [{ id, degree, type?, radius?, anchor?, x?, y?, z?, pinned? }], links: [{ source, target }] }
+//      (galaxy view: `anchor` is the sun a node orbits; x/y/z/pinned: where the user left it)
+//      { type: 'drag', id, x, y, z? } / { type: 'release', id, pin } / { type: 'unpin-all' }
 //      { type: 'forces', forces: { center, repel, link, distance, spacing, gravity, spin } }
 //      { type: 'pause' } / { type: 'resume' } (hidden tab: no work)
 // out: { type: 'tick', gen, positions } / { type: 'end', gen }
 
 let gen = 0;
+let dims = 2;
 let nodes = [];
 let byId = new Map();
 // "Gravity": the layout never fully settles; it keeps a little energy and slowly orbits the center.
@@ -40,20 +46,28 @@ function orbitForce() {
     for (const n of list) {
       if (n.fx != null) continue;
       const sun = n.anchor ? byId.get(n.anchor) : null;
+      const turn = { spin: gravity ? spin : 0 };
       if (sun && n.fixed) {
         // Pinned planet: on its circle, only turning. Set the velocity so that after d3's decay
         // (x += v * 0.6) it lands exactly on the next spot.
-        const step = fixedOrbitStep(n.x - sun.x, n.y - sun.y, n.rest, { spin: gravity ? spin : 0 });
+        const step = dims === 3
+          ? fixedOrbitStep3(n.x - sun.x, n.y - sun.y, n.z - sun.z, n.rest, turn)
+          : fixedOrbitStep(n.x - sun.x, n.y - sun.y, n.rest, turn);
         n.vx = step.dx / (1 - VELOCITY_DECAY);
         n.vy = step.dy / (1 - VELOCITY_DECAY);
+        if (dims === 3) n.vz = step.dz / (1 - VELOCITY_DECAY);
         continue;
       }
       let v;
-      if (sun) v = systemPull(n.x - sun.x, n.y - sun.y, n.rest, { spin: gravity ? spin : 0 });
-      else if (gravity && n.type !== 'galaxy') v = orbitalNudge(n.x, n.y, { spin, wander: 1, t: tick, phase: n.phase });
-      else continue;
+      if (sun) {
+        v = dims === 3 ? systemPull3(n.x - sun.x, n.y - sun.y, n.z - sun.z, n.rest, turn) : systemPull(n.x - sun.x, n.y - sun.y, n.rest, turn);
+      } else if (gravity && n.type !== 'galaxy') {
+        const wander = { spin, wander: 1, t: tick, phase: n.phase };
+        v = dims === 3 ? orbitalNudge3(n.x, n.y, n.z, wander) : orbitalNudge(n.x, n.y, wander);
+      } else continue;
       n.vx += v.vx;
       n.vy += v.vy;
+      if (dims === 3) n.vz += v.vz;
     }
   };
   force.initialize = (next) => {
@@ -78,6 +92,7 @@ const sim = forceSimulation([])
   // Planets follow their sun, not the center.
   .force('x', forceX(0).strength((n) => (n.anchor ? 0 : center)))
   .force('y', forceY(0).strength((n) => (n.anchor ? 0 : center)))
+  .force('z', forceZ(0).strength((n) => (n.anchor || dims !== 3 ? 0 : center)))
   .force('collide', forceCollide((n) => n.r + 2))
   .force('orbit', orbitForce())
   .alphaDecay(0.025)
@@ -85,10 +100,11 @@ const sim = forceSimulation([])
   .stop();
 
 function post() {
-  const positions = new Float32Array(nodes.length * 2);
+  const positions = new Float32Array(nodes.length * dims);
   nodes.forEach((n, i) => {
-    positions[i * 2] = n.x;
-    positions[i * 2 + 1] = n.y;
+    positions[i * dims] = n.x;
+    positions[i * dims + 1] = n.y;
+    if (dims === 3) positions[i * dims + 2] = n.z;
   });
   self.postMessage({ type: 'tick', gen, positions }, [positions.buffer]);
 }
@@ -98,20 +114,31 @@ sim.on('end', () => self.postMessage({ type: 'end', gen }));
 
 // Nodes already on screen keep their place (and speed); only new ones are placed, so editing a
 // link nudges the graph instead of re-shuffling it.
-function setGraph(next, links) {
-  const known = new Map(nodes.map((n) => [n.id, { x: n.x, y: n.y }]));
-  // Where the user left the graph last time, for nodes not on screen now.
-  for (const n of next) if (!known.has(n.id) && Number.isFinite(n.x) && Number.isFinite(n.y)) known.set(n.id, { x: n.x, y: n.y });
+// Switching between 2D and 3D (`nextDims`) keeps x and y: the flat layout opens up in depth.
+function setGraph(next, links, nextDims = dims) {
+  const switching = nextDims !== dims;
+  const at = (n) => (dims === 3 && !switching ? { x: n.x, y: n.y, z: n.z } : { x: n.x, y: n.y });
+  const known = new Map(nodes.map((n) => [n.id, at(n)]));
+  // Where the user left the graph last time (or the other mode's layout), for these nodes.
+  for (const n of next) {
+    if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) continue;
+    if (switching || !known.has(n.id)) known.set(n.id, Number.isFinite(n.z) ? { x: n.x, y: n.y, z: n.z } : { x: n.x, y: n.y });
+  }
+  if (switching) {
+    dims = nextDims;
+    nodes = [];
+    sim.numDimensions(dims);
+  }
   const restored = new Set(next.filter((n) => Number.isFinite(n.x)).map((n) => n.id));
-  const old = byId;
-  const placed = placeNewNodes(next, links, known);
+  const old = switching ? new Map() : byId;
+  const placed = placeNewNodes(next, links, known, Math.random, dims);
   nodes = placed.map((p, i) => {
     const prev = old.get(p.id);
     const data = next[i];
     // A pin is kept only while the node stays the same kind (a sun that turns into a planet lets go).
     const same = prev?.type === data.type ? prev : null;
     return {
-      id: p.id, type: data.type, anchor: data.anchor ?? null, x: p.x, y: p.y, vx: prev?.vx ?? 0, vy: prev?.vy ?? 0, fx: same?.fx, fy: same?.fy,
+      id: p.id, type: data.type, anchor: data.anchor ?? null, x: p.x, y: p.y, z: p.z ?? 0, vx: prev?.vx ?? 0, vy: prev?.vy ?? 0, vz: prev?.vz ?? 0, fx: same?.fx, fy: same?.fy, fz: same?.fz,
       r: data.radius ?? nodeRadius(data.degree), phase: prev?.phase, fixed: same ? same.fixed : false,
       saved: data.pinned && !prev,
     };
@@ -121,12 +148,16 @@ function setGraph(next, links) {
     // The sun is the heaviest body: it holds still (in the middle, or where it was dropped) and
     // its planets go around it.
     if (n.type === 'sun' && n.fx == null) {
+      // Coming from the flat graph, the sun stays in the middle plane.
+      if (dims === 3 && switching && !Number.isFinite(next.find((d) => d.id === n.id)?.z)) n.z = 0;
       if (!restored.has(n.id)) {
         n.x = 0;
         n.y = 0;
+        n.z = 0;
       }
       n.fx = n.x;
       n.fy = n.y;
+      if (dims === 3) n.fz = n.z;
     }
   }
   for (const n of nodes) {
@@ -141,6 +172,7 @@ function setGraph(next, links) {
   sim.force('link').links(links.map((l) => ({ source: l.source, target: l.target })));
   sim.force('collide').initialize(nodes);
   sim.force('orbit').initialize(nodes);
+  sim.force('z').strength(sim.force('z').strength());
   sim.alpha(known.size ? 0.3 : 1).alphaTarget(dragging ? 0.3 : restingTarget());
   if (!paused) sim.restart();
   post();
@@ -152,12 +184,14 @@ function pin(n) {
   const sun = n.anchor ? byId.get(n.anchor) : null;
   if (sun) {
     n.fixed = true;
-    n.rest = Math.max(1, Math.hypot(n.x - sun.x, n.y - sun.y));
+    n.rest = Math.max(1, Math.hypot(n.x - sun.x, n.y - sun.y, dims === 3 ? n.z - sun.z : 0));
     n.fx = null;
     n.fy = null;
+    n.fz = null;
   } else {
     n.fx = n.x;
     n.fy = n.y;
+    if (dims === 3) n.fz = n.z;
   }
 }
 
@@ -168,6 +202,7 @@ function unpin(n) {
   if (n.type !== 'sun') {
     n.fx = null;
     n.fy = null;
+    n.fz = null;
   }
 }
 
@@ -188,6 +223,7 @@ function setForces(f) {
   sim.force('charge').strength(sim.force('charge').strength());
   sim.force('x').strength(sim.force('x').strength());
   sim.force('y').strength(sim.force('y').strength());
+  sim.force('z').strength(sim.force('z').strength());
   gravity = Boolean(f.gravity);
   spin = Number.isFinite(f.spin) ? Math.max(0, Math.min(3, f.spin)) : 1;
   if (!dragging) sim.alphaTarget(restingTarget());
@@ -199,12 +235,13 @@ self.onmessage = ({ data }) => {
     setForces(data.forces);
   } else if (data.type === 'graph') {
     gen = data.gen;
-    setGraph(data.nodes, data.links);
+    setGraph(data.nodes, data.links, data.dims === 3 ? 3 : 2);
   } else if (data.type === 'drag') {
     const n = byId.get(data.id);
     if (!n) return;
     n.fx = data.x;
     n.fy = data.y;
+    if (dims === 3 && Number.isFinite(data.z)) n.fz = data.z;
     dragging = true;
     sim.alphaTarget(0.3).restart();
   } else if (data.type === 'release') {
@@ -214,6 +251,7 @@ self.onmessage = ({ data }) => {
       if (data.pin) {
         n.x = n.fx ?? n.x;
         n.y = n.fy ?? n.y;
+        n.z = n.fz ?? n.z;
         pin(n);
       } else {
         unpin(n);
