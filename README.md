@@ -79,10 +79,10 @@ histórico de versões.
   documento mantém a distância do sol e só gira em volta dele; **Soltar nós fixos** libera todos.
   O controle **Espaçamento** deixa o grafo mais separado ou mais junto.
 - **Grafo em 3D** (é como o grafo abre; o botão **2D / 3D**, no canto inferior esquerdo, troca de
-  modo e a escolha fica lembrada): a constelação vira espaço de verdade. **Arraste para girar**
-  (em qualquer ponto, até em cima de uma galáxia), use a roda para **zoom**, o botão direito (ou
-  Shift + arrastar) para **mover**, **Alt + arrastar** para mover um nó e dê **duplo clique num nó
-  para voar até ele**. Um clique abre
+  modo e a escolha fica lembrada): a constelação vira espaço de verdade. **Arraste uma estrela**
+  para levá-la a outro lugar (como no 2D), **arraste no vazio para girar** (Alt + arrastar gira
+  mesmo em cima de um nó), use a roda para **zoom**, o botão direito (ou Shift + arrastar) para
+  **mover a vista** e dê **duplo clique num nó para voar até ele**. Um clique abre
   a nota e, numa galáxia, entra na pasta, como no 2D. Galáxias inclinadas, sóis, naves e asteroides,
   estrelas de fundo e neblina de profundidade vão junto, e os nomes ficam sempre virados para você.
   Parado por alguns segundos, o grafo **gira devagar sozinho** (dá para desligar em Exibição). O

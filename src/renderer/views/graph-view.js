@@ -474,7 +474,7 @@ export class GraphView {
   // How to move around in 3D, shown for a few seconds each time the graph enters 3D.
   showHint() {
     this.hint?.remove();
-    this.hint = el('div', { class: 'graph-hint', text: 'Arraste para girar · roda: zoom · botão direito: mover · duplo clique num nó: voar até ele · Alt + arrastar: mover um nó' });
+    this.hint = el('div', { class: 'graph-hint', text: 'Arraste uma estrela para movê-la · arraste no vazio para girar · roda: zoom · botão direito: mover a vista · duplo clique num nó: voar até ele' });
     this.content.append(this.hint);
     const hint = this.hint;
     setTimeout(() => hint.classList.add('is-fading'), 6000);
@@ -774,8 +774,13 @@ export class GraphView {
     // The node is kept by id: the graph can be rebuilt (a save, a sync) in the middle of a drag.
     const index = pan ? -1 : this.nodeAt(event);
     const hit = index >= 0 ? this.nodes[index].id : null;
-    // 3D: dragging turns the view, even over a star or galaxy; Alt + drag moves the node.
-    const grab = this.is3D && !event.altKey ? null : hit;
+    // 3D: dragging a star (its bright middle) moves it, like in 2D; dragging anywhere else turns
+    // the view. Alt + drag always turns.
+    let grab = hit;
+    if (this.is3D) {
+      const core = event.altKey ? -1 : this.scene3d.pick(p.x, p.y, { core: true });
+      grab = core >= 0 ? this.nodes[core].id : null;
+    }
     this.pointer = { id: grab, hit, start: p, last: p, moved: false, pan };
     this.canvas.setPointerCapture(event.pointerId);
   }

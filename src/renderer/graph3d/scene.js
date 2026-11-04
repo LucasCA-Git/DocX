@@ -458,15 +458,18 @@ export class Graph3D {
 
   // ---------- picking and dragging ----------
 
-  // The node under (px, py) in CSS pixels (the nearest one when they overlap), or -1.
-  pick(px, py) {
+  // The node under (px, py) in CSS pixels (the nearest one when they overlap), or -1. With `core`,
+  // only the bright middle of a body counts (to grab it for a drag): around a big galaxy or sun a
+  // drag still turns the view.
+  pick(px, py, { core = false } = {}) {
     const { x, y, r, d } = this.screen;
     let best = -1;
     let bestDepth = Infinity;
     for (let i = 0; i < this.nodes.length; i++) {
       if (!(d[i] > 0)) continue;
       const type = this.nodes[i].type;
-      const reach = Math.max(6, r[i] * (type === 'galaxy' || type === 'sun' ? 1.5 : 1.2));
+      const big = type === 'galaxy' || type === 'sun';
+      const reach = core ? Math.max(8, r[i] * (big ? 0.6 : 1.1)) : Math.max(6, r[i] * (big ? 1.5 : 1.2));
       const dx = px - x[i];
       const dy = py - y[i];
       if (dx * dx + dy * dy <= reach * reach && d[i] < bestDepth) {
