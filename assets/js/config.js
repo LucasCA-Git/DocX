@@ -18,9 +18,9 @@ window.DOCX_SITE = {
     kofi: '',           // ex.: 'https://ko-fi.com/seu-usuario'
     // Pix: use uma CHAVE ALEATÓRIA (nunca CPF ou telefone). O QR code é gerado no navegador.
     pix: {
-      key: '',          // ex.: '123e4567-e89b-12d3-a456-426614174000'
-      name: '',         // nome do recebedor como aparece no banco (até 25 letras, sem acento)
-      city: '',         // cidade do recebedor (até 15 letras, sem acento)
+      key: '80107798-7457-485b-9a87-37dbb6dcd49c', // chave aleatória
+      name: 'Lucas Cardoso Alecrim', // nome do recebedor como aparece no banco (até 25 letras)
+      city: 'Recife',   // cidade do recebedor (até 15 letras, sem acento)
     },
   },
 
