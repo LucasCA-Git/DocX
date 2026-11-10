@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.gstatic.com https://*.doubleclick.net https://*.adtrafficquality.google; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self'; font-src 'self'; connect-src 'self' https://api.github.com https://*.googlesyndication.com https://*.google.com https://*.doubleclick.net https://*.adtrafficquality.google; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>DocX: notas em Markdown, conectadas e sincronizadas no seu Git</title>
+  <meta name="description" content="DocX é um app gratuito para Windows e Linux: notas em Markdown com links entre notas, grafo 3D, canvas, desenhos e sincronização pelo seu próprio repositório Git. Sem conta, sem servidor, sem telemetria.">
+  <meta name="theme-color" content="#0c0b12">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/img/16x16.png">
+  <link rel="apple-touch-icon" href="assets/img/256x256.png">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="DocX: suas notas, conectadas, no seu próprio Git">
+  <meta property="og:description" content="Notas em Markdown com links, grafo 3D, canvas e desenhos. Grátis para Windows e Linux.">
+  <meta property="og:image" content="https://lucasca-git.github.io/DocX/assets/videos/03-grafo-3d.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="assets/css/site.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "DocX",
+    "applicationCategory": "ProductivityApplication",
+    "operatingSystem": "Windows 10, Windows 11, Ubuntu, Debian, Linux",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+    "description": "Notas em Markdown com links entre notas, grafo, canvas, desenhos e sincronização pelo seu próprio repositório Git.",
+    "inLanguage": "pt-BR"
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <div class="sky" aria-hidden="true"><canvas></canvas></div>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="assets/img/128x128.png" alt="" width="30" height="30">DocX</a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+      <nav class="nav" id="nav" aria-label="Principal">
+        <a href="#recursos">Recursos</a>
+        <a href="#grafo">Grafo 3D</a>
+        <a href="#claude">Claude</a>
+        <a href="guia.html">Guia</a>
+        <a href="apoie.html">Apoie</a>
+        <a class="btn btn-primary btn-sm" href="#download">Baixar</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="hero">
+      <div class="wrap">
+        <span class="badge"><span class="dot"></span><span data-version="name">Versão 2.0</span> · grátis</span>
+        <h1>Suas notas, <span class="grad">conectadas</span>.<br>No seu próprio Git.</h1>
+        <p class="lead">Escreva em Markdown, ligue ideias com <code>[[links]]</code> e explore tudo num grafo
+          em 3D. Suas notas ficam em arquivos comuns no seu computador e sincronizam pelo seu repositório,
+          sem conta e sem servidor de terceiros.</p>
+        <div class="cta">
+          <a class="btn btn-primary btn-lg" data-download="auto" href="#download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            <span class="label">Baixar o DocX</span>
+          </a>
+          <a class="btn btn-ghost btn-lg" href="#recursos">Ver recursos</a>
+        </div>
+        <p class="cta-note">Windows 10/11 e Linux (Ubuntu, Debian, AppImage) · <a href="#download">outras opções</a></p>
+
+        <div class="showcase">
+          <video data-autoplay muted loop playsinline preload="metadata" poster="assets/videos/03-grafo-3d.jpg"
+                 aria-label="Demonstração: grafo das notas em 3D, girando, aproximando e entrando numa pasta">
+            <source src="assets/videos/03-grafo-3d.mp4" type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="pilares">
+      <div class="wrap">
+        <h2 id="pilares" class="visually-hidden">Por que o DocX</h2>
+        <div class="pillars">
+          <div class="pillar">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg></div>
+            <h3>Arquivos que são seus</h3>
+            <p>Cada nota é um arquivo <code>.md</code> numa pasta do seu computador. Abre em qualquer editor,
+              funciona offline e não fica preso a nenhum app.</p>
+          </div>
+          <div class="pillar">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9v3a6 6 0 0 0 6 6h3"/></svg></div>
+            <h3>Sincroniza pelo seu Git</h3>
+            <p>A cópia online fica num repositório seu (GitHub, GitLab…), com histórico de versões de cada
+              nota. Nenhum servidor nosso guarda nada.</p>
+          </div>
+          <div class="pillar">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+            <h3>Privado por padrão</h3>
+            <p>Sem cadastro, sem telemetria e sem anúncios dentro do app. A interface não faz chamadas de
+              rede: só o Git, quando você sincroniza.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="grafo" class="graph-section" aria-labelledby="grafo-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Grafo 3D</span>
+          <h2 id="grafo-titulo">Voe pelo universo das suas notas</h2>
+          <p>Cada nota é uma estrela e cada link, uma linha de constelação. As pastas viram galáxias, a nota
+            principal de cada uma vira o sol e as outras orbitam em volta. Gire, aproxime e entre numa
+            galáxia para ver só o que tem dentro.</p>
+        </div>
+        <div class="graph-stage">
+          <div class="media">
+            <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/04-grafo-2d-constelacao.jpg" aria-label="Demonstração do grafo em estilo constelação, com galáxias e naves">
+              <source src="assets/videos/04-grafo-2d-constelacao.mp4" type="video/mp4">
+            </video>
+          </div>
+          <ul class="controls" aria-label="Controles do grafo 3D">
+            <li><span class="key">Arrastar no vazio</span><span>gira o espaço</span></li>
+            <li><span class="key">Arrastar uma estrela</span><span>leva a nota para outro lugar</span></li>
+            <li><span class="key">Roda do mouse</span><span>aproxima e afasta</span></li>
+            <li><span class="key">Botão direito</span><span>move a vista</span></li>
+            <li><span class="key">Duplo clique</span><span>voa até a nota</span></li>
+            <li><span class="key">Clique</span><span>abre a nota ou entra na galáxia</span></li>
+          </ul>
+        </div>
+        <div class="chips">
+          <span>2D ou 3D com um botão</span><span>Giro automático quando parado</span>
+          <span>Naves, frotas e asteroides no céu</span><span>Grupos coloridos e filtros</span>
+          <span>Lembra a câmera de cada pasta</span><span>Links de canvas e desenhos entram no grafo</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="recursos" aria-labelledby="recursos-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Recursos</span>
+          <h2 id="recursos-titulo">Tudo o que você precisa para pensar por escrito</h2>
+          <p>Veja o DocX funcionando de verdade: os vídeos abaixo foram gravados no próprio app.</p>
+        </div>
+
+        <div class="features">
+          <article class="feature">
+            <div class="feature-text">
+              <h3>Escreva em Markdown e veja a formatação na hora</h3>
+              <p>O Live Preview transforma o Markdown enquanto você digita. <kbd>Ctrl</kbd>+<kbd>E</kbd> alterna
+                entre edição e leitura.</p>
+              <ul>
+                <li>Tabelas, checklists, notas de rodapé e realce de código</li>
+                <li>Fórmulas (KaTeX), diagramas Mermaid e callouts</li>
+                <li>Propriedades em YAML, tags e modo Vim opcional</li>
+              </ul>
+            </div>
+            <div class="media">
+              <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/01-visao-geral.jpg" aria-label="Demonstração do editor com Live Preview">
+                <source src="assets/videos/01-visao-geral.mp4" type="video/mp4">
+              </video>
+            </div>
+          </article>
+
+          <article class="feature">
+            <div class="feature-text">
+              <h3>Ligue ideias com <code>[[links]]</code></h3>
+              <p>Digite <code>[[</code> e escolha a nota. Passe o mouse para ver a prévia, e veja no painel
+                lateral tudo o que aponta para a nota atual.</p>
+              <ul>
+                <li>Backlinks, menções não ligadas e links de saída</li>
+                <li>Renomear uma nota atualiza todos os links para ela</li>
+                <li>Transclusão: mostre uma nota (ou um trecho) dentro de outra</li>
+              </ul>
+            </div>
+            <div class="media">
+              <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/02-links-e-backlinks.jpg" aria-label="Demonstração de links entre notas e backlinks">
+                <source src="assets/videos/02-links-e-backlinks.mp4" type="video/mp4">
+              </video>
+            </div>
+          </article>
+
+          <article class="feature">
+            <div class="feature-text">
+              <h3>Pense no quadro branco</h3>
+              <p>Monte mapas com cartões e notas no canvas, ligados por setas, ou desenhe à mão livre.
+                Diagramas também ficam no vault, ao lado das notas.</p>
+              <ul>
+                <li>Canvas com cartões de texto, notas e grupos</li>
+                <li>Desenhos à mão livre e diagramas</li>
+                <li>Imagens, PDFs, áudio e vídeo: cole ou arraste para a nota</li>
+              </ul>
+            </div>
+            <div class="media">
+              <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/05-canvas-e-desenhos.jpg" aria-label="Demonstração do canvas e de desenhos">
+                <source src="assets/videos/05-canvas-e-desenhos.mp4" type="video/mp4">
+              </video>
+            </div>
+          </article>
+
+          <article class="feature">
+            <div class="feature-text">
+              <h3>Tudo a um atalho de distância</h3>
+              <p>Busca instantânea em todas as notas, troca rápida com <kbd>Ctrl</kbd>+<kbd>O</kbd> e paleta de
+                comandos com <kbd>Ctrl</kbd>+<kbd>P</kbd>.</p>
+              <ul>
+                <li>Busca por texto, tags e caminhos</li>
+                <li>Tela dividida, abas e temas claro e escuro</li>
+                <li>Nota diária e modelos com um atalho</li>
+              </ul>
+            </div>
+            <div class="media">
+              <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/06-busca-e-comandos.jpg" aria-label="Demonstração da busca e da paleta de comandos">
+                <source src="assets/videos/06-busca-e-comandos.mp4" type="video/mp4">
+              </video>
+            </div>
+          </article>
+        </div>
+        <p class="center-cta"><a class="btn btn-ghost" href="guia.html">Ver o guia completo de uso</a></p>
+      </div>
+    </section>
+
+    <section id="claude" aria-labelledby="claude-titulo">
+      <div class="wrap">
+        <div class="claude-grid">
+          <div>
+            <span class="eyebrow">Assistente Claude</span>
+            <h2 id="claude-titulo">Converse com as suas notas usando o Claude</h2>
+            <p class="muted">O DocX se conecta ao <strong>Claude Code instalado no seu computador</strong>, com o
+              login e a assinatura da sua conta do Claude. Não há chave de API para configurar.</p>
+            <ul class="checks">
+              <li><strong>Só lê:</strong> o Claude procura e lê arquivos dentro do vault, e nada fora dele.
+                Não roda comandos nem acessa a internet.</li>
+              <li><strong>Você decide:</strong> para criar ou mudar algo, ele propõe, e cada proposta tem
+                <em>Aplicar</em> e <em>Descartar</em>. Alterações aparecem como diferença.</li>
+              <li><strong>Cria de tudo:</strong> notas, pastas, canvas, desenhos e diagramas.</li>
+              <li><strong>Conversas por vault:</strong> retome de onde parou; escolha Opus, Sonnet ou Haiku.</li>
+              <li>Funciona no Windows (inclusive com o Claude Code no WSL) e no Linux. Abra com
+                <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>.</li>
+            </ul>
+            <a class="btn btn-ghost" href="guia.html#claude">Como configurar</a>
+          </div>
+          <div class="chat-mock" aria-label="Exemplo de conversa com o Claude no DocX" role="img">
+            <div class="chat-head"><span class="spark">✦</span> Claude <span class="chat-sub">· Minhas notas</span></div>
+            <div class="bubble user">Cria uma nota resumindo o que estudei de física essa semana e liga nas notas de origem.</div>
+            <div class="bubble bot">Li <code>Estudos/Física</code>: 4 notas desta semana. Proponho uma nota de resumo com links
+              para cada uma.</div>
+            <div class="proposal">
+              <div class="proposal-head"><span class="badge-new">Criar</span><code>Estudos/Resumo da semana.md</code></div>
+              <pre><span class="add"># Resumo da semana</span>
+<span class="add">- Relatividade: [[Relatividade]]</span>
+<span class="add">- Ondas: [[Ondas e som]]</span>
+<span class="add">- Exercícios: [[Lista 3]]</span></pre>
+              <div class="proposal-actions"><span class="btn btn-primary btn-sm">Aplicar</span><span class="btn btn-ghost btn-sm">Descartar</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap"><aside class="ad-slot" data-slot="home" aria-label="Publicidade"></aside></div>
+
+    <section id="sync" aria-labelledby="sync-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Sincronização</span>
+          <h2 id="sync-titulo">Backup e histórico no seu repositório</h2>
+          <p>Use um repositório privado no GitHub, no GitLab ou onde preferir. O login é feito pelo próprio
+            Git do seu computador: o DocX nunca vê a sua senha.</p>
+        </div>
+        <div class="steps">
+          <div class="step"><h3>Crie um repositório</h3><p>Um repositório privado e vazio, por exemplo
+            <code>notas</code>, na sua conta.</p></div>
+          <div class="step"><h3>Cole a URL no DocX</h3><p>Em Configurações › Vault e sincronização, escolha
+            Git e cole a URL do repositório.</p></div>
+          <div class="step"><h3>Pronto</h3><p>O DocX envia e busca as mudanças sozinho. Cada nota ganha
+            histórico de versões.</p></div>
+        </div>
+        <div class="media media-wide">
+          <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/07-sync-git.jpg" aria-label="Demonstração da configuração da sincronização com Git">
+            <source src="assets/videos/07-sync-git.mp4" type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </section>
+
+    <section id="download" aria-labelledby="download-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Download</span>
+          <h2 id="download-titulo">Baixe grátis</h2>
+          <p><span data-version="long">Última versão</span>. Sem cadastro.</p>
+        </div>
+        <div class="download-grid">
+          <div class="dl-card" data-os="windows">
+            <div class="os"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.5 4.5v7H3zM11.5 4.3 21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg><h3>Windows</h3></div>
+            <p>Windows 10 e 11, 64 bits. Instalador com atalhos na Área de Trabalho e no Menu Iniciar.</p>
+            <a class="btn btn-primary" data-download="windows" href="#">Baixar .exe <span data-size="windows"></span></a>
+          </div>
+          <div class="dl-card" data-os="deb">
+            <div class="os"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="5.2"/><circle cx="19.2" cy="12" r="2"/><circle cx="8.4" cy="5.8" r="2"/><circle cx="8.4" cy="18.2" r="2"/></svg><h3>Ubuntu / Debian</h3></div>
+            <p>Pacote <code>.deb</code>, 64 bits. Instala pelo <code>apt</code> ou pela Central de Aplicativos.</p>
+            <code class="cmd">sudo apt install ./DocX-linux-amd64.deb</code>
+            <a class="btn btn-primary" data-download="deb" href="#">Baixar .deb <span data-size="deb"></span></a>
+          </div>
+          <div class="dl-card" data-os="appimage">
+            <div class="os"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg><h3>Qualquer Linux</h3></div>
+            <p>AppImage portátil, 64 bits. Não precisa instalar: dê permissão e execute.</p>
+            <code class="cmd">chmod +x DocX-x86_64.AppImage</code>
+            <a class="btn btn-ghost" data-download="appimage" href="#">Baixar AppImage <span data-size="appimage"></span></a>
+          </div>
+        </div>
+        <div class="notice">
+          <strong>Windows:</strong> o instalador ainda não tem assinatura digital. Se aparecer
+          "O Windows protegeu o computador", clique em <strong>Mais informações › Executar assim mesmo</strong>.
+          Para sincronizar, tenha o <a href="https://git-scm.com/download/win" rel="noopener">Git for Windows</a>
+          instalado. Confira a integridade dos arquivos pelo <code>SHA256SUMS.txt</code> na
+          <a data-releases href="#" rel="noopener">página da versão</a>.
+        </div>
+        <p class="dl-meta">macOS: ainda não disponível.</p>
+      </div>
+    </section>
+
+    <div class="wrap"><aside class="ad-slot" data-slot="download" aria-label="Publicidade"></aside></div>
+
+    <section aria-labelledby="apoie-titulo">
+      <div class="wrap">
+        <div class="support-band">
+          <div>
+            <span class="eyebrow">Apoie</span>
+            <h2 id="apoie-titulo">O DocX é gratuito. Ajude a mantê-lo assim.</h2>
+            <p>Ele é feito por uma pessoa só, no tempo livre. Doações pagam o domínio, a assinatura digital do
+              instalador do Windows e o tempo para novos recursos.</p>
+          </div>
+          <div class="actions">
+            <a class="btn btn-primary btn-lg" href="apoie.html">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3 2.4h2c.7-1.3 2.2-2.4 4.3-2.4 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>
+              Apoiar o projeto
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-titulo">
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow">Dúvidas</span>
+          <h2 id="faq-titulo">Perguntas frequentes</h2>
+        </div>
+        <div class="faq">
+          <details><summary>O DocX é gratuito mesmo?</summary>
+            <p>Sim. Não tem plano pago, período de teste nem recurso bloqueado. O projeto se mantém com
+              doações e com anúncios aqui no site, nunca dentro do app.</p></details>
+          <details><summary>Preciso criar uma conta?</summary>
+            <p>Não. Você instala e escolhe uma pasta para as notas. Para sincronizar, usa a sua própria conta
+              do GitHub (ou de outro serviço Git).</p></details>
+          <details><summary>Onde ficam as minhas notas?</summary>
+            <p>Numa pasta do seu computador, como arquivos <code>.md</code> comuns. Se você ativar a
+              sincronização, uma cópia vai para o repositório Git que você escolher. Nada passa por servidores
+              do DocX, porque eles não existem.</p></details>
+          <details><summary>Funciona sem internet?</summary>
+            <p>Sim, tudo funciona offline. A sincronização acontece quando houver conexão.</p></details>
+          <details><summary>Posso usar as notas que já tenho?</summary>
+            <p>Sim. Aponte o DocX para qualquer pasta com arquivos Markdown e ele reconhece as notas, os links
+              <code>[[assim]]</code>, as tags e as propriedades.</p></details>
+          <details><summary>O Windows diz que o instalador é desconhecido. É seguro?</summary>
+            <p>O aviso aparece porque o instalador ainda não tem uma assinatura digital paga. Baixe sempre por
+              este site e, se quiser, confira o SHA256 do arquivo na página da versão. Comprar a assinatura é um
+              dos objetivos das doações.</p></details>
+          <details><summary>E o macOS?</summary>
+            <p>Ainda não há versão para Mac. Está nos planos.</p></details>
+          <details><summary>Tem inteligência artificial?</summary>
+            <p>É opcional. Se você já usa o Claude Code no seu computador, o DocX pode abrir um painel de
+              conversa que lê as suas notas e propõe mudanças, que só são aplicadas quando você confirma.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© <span data-year>2026</span> DocX</span>
+      <nav aria-label="Rodapé">
+        <a href="#download">Download</a>
+        <a href="apoie.html">Apoie</a>
+        <a href="privacidade.html">Privacidade</a>
+        <button type="button" class="link-button" data-ad-prefs>Preferências de anúncios</button>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/site.js"></script>
+  <script src="assets/js/ads.js"></script>
+</body>
+</html>

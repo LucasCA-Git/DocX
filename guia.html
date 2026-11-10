@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.gstatic.com https://*.doubleclick.net https://*.adtrafficquality.google; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self'; font-src 'self'; connect-src 'self' https://api.github.com https://*.googlesyndication.com https://*.google.com https://*.doubleclick.net https://*.adtrafficquality.google; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Guia de uso · DocX</title>
+  <meta name="description" content="Guia completo do DocX: instalação, primeiros passos, Markdown, links, grafo 3D, canvas, sincronização com Git, assistente Claude e atalhos.">
+  <meta name="theme-color" content="#0c0b12">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/img/16x16.png">
+  <link rel="apple-touch-icon" href="assets/img/256x256.png">
+  <meta property="og:title" content="Guia de uso do DocX">
+  <meta property="og:description" content="Do primeiro download ao grafo 3D e ao assistente Claude.">
+  <meta property="og:image" content="https://lucasca-git.github.io/DocX/assets/videos/01-visao-geral.jpg">
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <div class="sky" aria-hidden="true"><canvas></canvas></div>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="assets/img/128x128.png" alt="" width="30" height="30">DocX</a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+      <nav class="nav" id="nav" aria-label="Principal">
+        <a href="./#recursos">Recursos</a>
+        <a href="./#grafo">Grafo 3D</a>
+        <a href="./#claude">Claude</a>
+        <a href="guia.html" aria-current="page">Guia</a>
+        <a href="apoie.html">Apoie</a>
+        <a class="btn btn-primary btn-sm" href="./#download">Baixar</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="page-hero">
+      <div class="wrap">
+        <span class="eyebrow">Guia de uso</span>
+        <h1>Do primeiro download ao <span class="grad">grafo 3D</span></h1>
+        <p class="lead">Tudo o que você precisa para usar o DocX, em passos curtos.</p>
+      </div>
+    </section>
+
+    <div class="wrap guide">
+      <nav class="toc" aria-label="Neste guia">
+        <strong>Neste guia</strong>
+        <ol>
+          <li><a href="#instalar">Instalar</a></li>
+          <li><a href="#primeiros-passos">Primeiros passos</a></li>
+          <li><a href="#escrever">Escrever</a></li>
+          <li><a href="#links">Links e backlinks</a></li>
+          <li><a href="#grafo">Grafo 2D e 3D</a></li>
+          <li><a href="#canvas">Canvas e desenhos</a></li>
+          <li><a href="#busca">Busca e comandos</a></li>
+          <li><a href="#sync">Sincronizar com Git</a></li>
+          <li><a href="#claude">Assistente Claude</a></li>
+          <li><a href="#atalhos">Atalhos</a></li>
+          <li><a href="#dados">Onde ficam os dados</a></li>
+        </ol>
+      </nav>
+
+      <div class="guide-body">
+        <section id="instalar">
+          <h2><span class="num">1</span>Instalar</h2>
+          <h3>Windows 10 e 11</h3>
+          <ol>
+            <li>Baixe o <a data-download="windows" href="#">DocX-Setup.exe</a>.</li>
+            <li>Abra o arquivo. Se aparecer "O Windows protegeu o computador", clique em
+              <strong>Mais informações › Executar assim mesmo</strong> (o instalador ainda não tem assinatura
+              digital paga).</li>
+            <li>Siga o assistente. O DocX ganha atalhos na Área de Trabalho e no Menu Iniciar.</li>
+            <li>Para sincronizar, instale também o <a href="https://git-scm.com/download/win" rel="noopener">Git for Windows</a>.</li>
+          </ol>
+          <h3>Ubuntu e Debian</h3>
+          <pre>wget -O /tmp/DocX.deb https://github.com/LucasCA-Git/DocX/releases/latest/download/DocX-linux-amd64.deb
+sudo apt install /tmp/DocX.deb</pre>
+          <h3>Qualquer Linux (AppImage)</h3>
+          <pre>chmod +x DocX-x86_64.AppImage
+./DocX-x86_64.AppImage</pre>
+        </section>
+
+        <section id="primeiros-passos">
+          <h2><span class="num">2</span>Primeiros passos</h2>
+          <ol>
+            <li>Abra o DocX e vá em <strong>⚙ Configurações › Vault e sincronização</strong>.</li>
+            <li>Em <strong>Pasta das notas</strong>, escolha uma pasta: nova ou com arquivos <code>.md</code> que
+              você já tenha. Essa pasta é o seu <strong>vault</strong>.</li>
+            <li>Escolha como sincronizar: <strong>Git</strong> (recomendado) ou <strong>nenhum</strong> (só no
+              computador). Dá para mudar depois.</li>
+            <li>Crie a primeira nota com <kbd>Ctrl</kbd>+<kbd>N</kbd>, ou abra a troca rápida com
+              <kbd>Ctrl</kbd>+<kbd>O</kbd> e digite um nome.</li>
+          </ol>
+          <div class="media">
+            <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/01-visao-geral.jpg" aria-label="Visão geral do DocX">
+              <source src="assets/videos/01-visao-geral.mp4" type="video/mp4">
+            </video>
+          </div>
+        </section>
+
+        <section id="escrever">
+          <h2><span class="num">3</span>Escrever</h2>
+          <p>O editor mostra a formatação enquanto você digita (Live Preview). <kbd>Ctrl</kbd>+<kbd>E</kbd>
+            alterna para o modo de leitura. Colar ou arrastar imagens, PDFs, áudio e vídeo coloca o arquivo no
+            vault e o link na nota.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Escreva</th><th>Para obter</th></tr></thead>
+              <tbody>
+                <tr><td><code>[[Outra nota]]</code></td><td>Link para outra nota</td></tr>
+                <tr><td><code>[[Outra nota|texto]]</code></td><td>Link com outro texto</td></tr>
+                <tr><td><code>[[Outra nota#Título]]</code></td><td>Link para um título</td></tr>
+                <tr><td><code>![[Outra nota]]</code></td><td>Conteúdo da outra nota embutido</td></tr>
+                <tr><td><code>![[imagem.png|300]]</code></td><td>Imagem com 300 px de largura</td></tr>
+                <tr><td><code>#projeto/docx</code></td><td>Tag (com hierarquia)</td></tr>
+                <tr><td><code>==texto==</code></td><td>Destaque</td></tr>
+                <tr><td><code>%%oculto%%</code></td><td>Comentário que não aparece na leitura</td></tr>
+                <tr><td><code>$E = mc^2$</code></td><td>Fórmula na linha (<code>$$…$$</code> em bloco)</td></tr>
+                <tr><td><code>&gt; [!tip] Título</code></td><td>Callout (note, tip, warning, danger, info, todo…)</td></tr>
+                <tr><td><code>```mermaid</code></td><td>Diagrama Mermaid</td></tr>
+                <tr><td><code>- [ ] tarefa</code></td><td>Checklist clicável</td></tr>
+                <tr><td><code>texto[^1]</code></td><td>Nota de rodapé</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Propriedades ficam no início da nota, em YAML, e aparecem como uma tabela:</p>
+          <pre>---
+tags: [estudo, git]
+aliases: [Controle de versão]
+status: em andamento
+---</pre>
+        </section>
+
+        <section id="links">
+          <h2><span class="num">4</span>Links e backlinks</h2>
+          <ul>
+            <li>Digite <code>[[</code> e escolha a nota na lista. Passe o mouse num link para ver a prévia, e
+              <kbd>Ctrl</kbd>+clique para abrir em outra aba.</li>
+            <li>O painel da direita (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>) mostra os
+              <strong>backlinks</strong> (quem aponta para a nota), as <strong>menções não ligadas</strong>
+              (com o botão Ligar), os links de saída, a estrutura de títulos, as tags e o grafo local.</li>
+            <li>Renomear ou mover uma nota <strong>atualiza todos os links</strong> para ela.</li>
+          </ul>
+          <div class="media">
+            <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/02-links-e-backlinks.jpg" aria-label="Links entre notas e backlinks">
+              <source src="assets/videos/02-links-e-backlinks.mp4" type="video/mp4">
+            </video>
+          </div>
+        </section>
+
+        <section id="grafo">
+          <h2><span class="num">5</span>Grafo 2D e 3D</h2>
+          <p>Abra com <kbd>Ctrl</kbd>+<kbd>G</kbd>. Cada pasta é uma <strong>galáxia</strong>: clique para entrar
+            e ver só o que está dentro. A nota principal da pasta (a que tem o mesmo nome dela, ou
+            <code>README</code>/<code>index</code>) vira o <strong>sol</strong>, e as outras orbitam em volta.
+            Para voltar, use a trilha no topo ou dê um duplo clique no vazio.</p>
+          <div class="media">
+            <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/03-grafo-3d.jpg" aria-label="Grafo em 3D">
+              <source src="assets/videos/03-grafo-3d.mp4" type="video/mp4">
+            </video>
+          </div>
+          <h3>Controles do 3D</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Ação</th><th>Resultado</th></tr></thead>
+              <tbody>
+                <tr><td>Arrastar no vazio</td><td>Gira o espaço (<kbd>Alt</kbd>+arrastar gira mesmo em cima de uma estrela)</td></tr>
+                <tr><td>Arrastar uma estrela</td><td>Move a nota de lugar</td></tr>
+                <tr><td>Roda do mouse</td><td>Zoom</td></tr>
+                <tr><td>Botão direito (ou <kbd>Shift</kbd>+arrastar)</td><td>Move a vista</td></tr>
+                <tr><td>Duplo clique numa estrela</td><td>Voa até ela</td></tr>
+                <tr><td>Clique</td><td>Abre a nota; numa galáxia, entra na pasta</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>O botão <strong>2D / 3D</strong>, no canto inferior esquerdo, troca de modo e a escolha fica
+            lembrada. Parado por alguns segundos, o grafo gira devagar sozinho (dá para desligar em Exibição).
+            No painel do grafo há filtros, grupos coloridos, forças, espaçamento e a intensidade do tráfego de
+            naves no céu.</p>
+          <div class="media">
+            <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/04-grafo-2d-constelacao.jpg" aria-label="Grafo 2D em estilo constelação">
+              <source src="assets/videos/04-grafo-2d-constelacao.mp4" type="video/mp4">
+            </video>
+          </div>
+        </section>
+
+        <section id="canvas">
+          <h2><span class="num">6</span>Canvas e desenhos</h2>
+          <ul>
+            <li><strong>Canvas</strong> (<code>.canvas</code>, formato aberto JSON Canvas): cartões de texto, de
+              nota, de imagem e de link, com setas, grupos e cores.</li>
+            <li><strong>Desenhos</strong> à mão livre (<code>.excalidraw</code>) e <strong>diagramas</strong>
+              (<code>.drawio</code>), que podem ser embutidos numa nota com <code>![[Desenho.excalidraw]]</code>.</li>
+            <li>Links feitos dentro de canvas, desenhos e diagramas entram no grafo e nos backlinks.</li>
+          </ul>
+          <div class="media">
+            <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/05-canvas-e-desenhos.jpg" aria-label="Canvas e desenhos">
+              <source src="assets/videos/05-canvas-e-desenhos.mp4" type="video/mp4">
+            </video>
+          </div>
+        </section>
+
+        <section id="busca">
+          <h2><span class="num">7</span>Busca e comandos</h2>
+          <ul>
+            <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> busca em todas as notas (texto, <code>tag:</code> e
+              caminho).</li>
+            <li><kbd>Ctrl</kbd>+<kbd>O</kbd> abre ou cria uma nota pelo nome.</li>
+            <li><kbd>Ctrl</kbd>+<kbd>P</kbd> é a paleta com todos os comandos: dividir a tela, trocar o tema,
+              inserir modelo e muito mais.</li>
+            <li><kbd>Alt</kbd>+<kbd>D</kbd> abre a nota diária de hoje.</li>
+          </ul>
+          <div class="media">
+            <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/06-busca-e-comandos.jpg" aria-label="Busca e paleta de comandos">
+              <source src="assets/videos/06-busca-e-comandos.mp4" type="video/mp4">
+            </video>
+          </div>
+        </section>
+
+        <section id="sync">
+          <h2><span class="num">8</span>Sincronizar com Git</h2>
+          <ol>
+            <li>Crie um repositório <strong>privado e vazio</strong> no GitHub (ou GitLab, Gitea, Bitbucket…),
+              sem marcar "Add README".</li>
+            <li>No DocX, em <strong>⚙ Configurações › Vault e sincronização</strong>, escolha <strong>Git</strong>
+              e preencha a URL (<code>https://github.com/seu-usuario/notas.git</code>) e a branch
+              (<code>main</code>).</li>
+            <li>Na primeira sincronização, o Git do seu computador pede o login. O DocX nunca vê nem guarda a
+              sua senha ou token.</li>
+          </ol>
+          <div class="media">
+            <video data-autoplay muted loop playsinline preload="none" poster="assets/videos/07-sync-git.jpg" aria-label="Configurando a sincronização com Git">
+              <source src="assets/videos/07-sync-git.mp4" type="video/mp4">
+            </video>
+          </div>
+          <h3>Como funciona</h3>
+          <ul>
+            <li>A cada edição, e a cada 30 segundos, o DocX salva uma versão, busca as mudanças do repositório e
+              envia as suas. Nenhum comando para digitar.</li>
+            <li><strong>Vários computadores:</strong> aponte cada um para o mesmo repositório.</li>
+            <li><strong>Conflitos:</strong> se a mesma nota mudou em dois lugares, a sua versão fica e a outra é
+              salva ao lado como <code>nota (conflito …).md</code>. Nada se perde.</li>
+            <li><strong>Offline:</strong> as versões ficam guardadas e sobem quando a conexão voltar.</li>
+            <li><strong>Histórico:</strong> no menu ⋮ da nota, <em>Histórico de versões</em> mostra e restaura
+              qualquer versão.</li>
+          </ul>
+        </section>
+
+        <section id="claude">
+          <h2><span class="num">9</span>Assistente Claude</h2>
+          <p>O DocX conversa com o <strong>Claude Code instalado no seu computador</strong>, usando o login e a
+            assinatura da sua conta do Claude. Não há chave de API.</p>
+          <h3>Configurar</h3>
+          <ol>
+            <li>Instale o <a href="https://docs.claude.com/en/docs/claude-code/overview" rel="noopener">Claude
+              Code</a> no Windows, no WSL ou no Linux (o DocX procura nos dois no Windows).</li>
+            <li>Abra um terminal, rode <code>claude</code> uma vez e entre com a sua conta.</li>
+            <li>No DocX, clique em ✨ na barra da esquerda ou aperte <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>.</li>
+          </ol>
+          <h3>O que ele pode fazer</h3>
+          <ul>
+            <li><strong>Ler</strong> as notas do vault (e nada fora dele). Ele não roda comandos, não acessa a
+              internet e não carrega plugins nem servidores MCP da sua instalação.</li>
+            <li><strong>Propor</strong> criar notas, pastas, canvas, desenhos e diagramas, ou alterar uma nota
+              (mostrando a diferença). Nada muda sem você clicar em <strong>Aplicar</strong>. Ele não apaga nem
+              renomeia arquivos.</li>
+            <li>"Esta nota" é a nota aberta. As conversas ficam salvas por vault, com busca, e dá para minimizar
+              o painel numa bolha.</li>
+            <li>Em <strong>⚙ Configurações › Claude</strong> você escolhe o modelo (Opus, Sonnet ou Haiku).</li>
+          </ul>
+        </section>
+
+        <section id="atalhos">
+          <h2><span class="num">10</span>Atalhos</h2>
+          <p>Todos os comandos estão na paleta (<kbd>Ctrl</kbd>+<kbd>P</kbd>), e os atalhos podem ser mudados em
+            <strong>⚙ Configurações › Atalhos de teclado</strong>.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Atalho</th><th>Ação</th></tr></thead>
+              <tbody>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>P</kbd></td><td>Paleta de comandos</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Abrir ou criar nota</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>N</kbd></td><td>Nova nota</td></tr>
+                <tr><td><kbd>Alt</kbd>+<kbd>D</kbd></td><td>Nota diária de hoje</td></tr>
+                <tr><td><kbd>Alt</kbd>+<kbd>T</kbd></td><td>Inserir modelo</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>Buscar no vault</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>G</kbd></td><td>Grafo</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd></td><td>Barra lateral direita</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd></td><td>Conversar com o Claude</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Alternar edição e leitura</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>I</kbd> / <kbd>K</kbd></td><td>Negrito / itálico / link</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>H</kbd></td><td>Buscar e substituir na nota</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>T</kbd> / <kbd>W</kbd></td><td>Nova aba / fechar aba</td></tr>
+                <tr><td><kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>→</kbd></td><td>Voltar / avançar</td></tr>
+                <tr><td><kbd>Ctrl</kbd>+<kbd>,</kbd></td><td>Configurações</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="dados">
+          <h2><span class="num">11</span>Onde ficam os dados</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>O quê</th><th>Onde</th></tr></thead>
+              <tbody>
+                <tr><td>Suas notas</td><td>Na pasta escolhida como vault (arquivos <code>.md</code> comuns)</td></tr>
+                <tr><td>Configurações do app</td><td>Windows: <code>%APPDATA%\DocX</code> · Linux: <code>~/.config/DocX</code></td></tr>
+                <tr><td>Lixeira</td><td><code>.trash/</code> dentro do vault</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>As configurações nunca vão para o Git. Para desinstalar no Windows, use
+            <strong>Configurações › Aplicativos</strong>; no Ubuntu, <code>sudo apt remove docx-notes</code>. As
+            suas notas não são apagadas.</p>
+          <p class="center-cta"><a class="btn btn-primary" href="./#download">Baixar o DocX</a></p>
+        </section>
+      </div>
+    </div>
+
+    <div class="wrap"><aside class="ad-slot" data-slot="download" aria-label="Publicidade"></aside></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© <span data-year>2026</span> DocX</span>
+      <nav aria-label="Rodapé">
+        <a href="./#download">Download</a>
+        <a href="guia.html">Guia</a>
+        <a href="apoie.html">Apoie</a>
+        <a href="privacidade.html">Privacidade</a>
+        <button type="button" class="link-button" data-ad-prefs>Preferências de anúncios</button>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/site.js"></script>
+  <script src="assets/js/ads.js"></script>
+</body>
+</html>
