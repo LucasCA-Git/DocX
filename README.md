@@ -22,16 +22,14 @@ Para ver localmente: `python3 -m http.server 8080` nesta pasta e abra <http://lo
 
 Repo `DocX` › **Settings › Pages** › *Deploy from a branch* › branch **`site`**, pasta **`/ (root)`**.
 
-> **Atenção, repo privado:**
-> - No plano **grátis** do GitHub, o Pages só funciona em repositório **público**. Com o `DocX`
->   privado, é preciso o **GitHub Pro** (o site continua público, só o código fica fechado).
-> - As **Releases de um repo privado não podem ser baixadas por visitantes**. Os botões de download
->   apontam para `github.com/<repo>/releases/latest/download/...` (`repo` em `config.js`), e esse
->   repo precisa ser público. Opções: deixar o `DocX` público; ou manter o `DocX` privado e publicar
->   os instaladores num repo público só de Releases (o workflow do `DocX` já faz isso com a
->   variável `PUBLIC_RELEASE_REPO`; aí troque `repo` em `config.js` para ele).
-> - Instalador dentro desta branch não dá: o Git recusa arquivos acima de 100 MB (o `.exe` tem
->   ~165 MB) e o Pages não serve arquivos do Git LFS.
+Os botões de download apontam para `github.com/<repo>/releases/latest/download/...` (`repo` em
+`config.js`, hoje `LucasCA-Git/DocX`, público). Se um dia o código ficar privado, o Pages deixa de
+ser grátis e as Releases deixam de ser baixáveis: aí publique os instaladores num repo público só
+de Releases (variável `PUBLIC_RELEASE_REPO` no workflow, ver `docs/PUBLICACAO.md` na `main`) e
+troque `repo` em `config.js`.
+
+Instalador dentro desta branch não dá: o Git recusa arquivos acima de 100 MB (o `.exe` tem
+~165 MB) e o Pages não serve arquivos do Git LFS.
 
 ## 2. Domínio próprio
 
